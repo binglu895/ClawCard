@@ -2,7 +2,7 @@ import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { Card } from './components/Card';
 import { GameState, CardData, PokerHand, Enhancement, Edition, Seal } from './types';
-import { EVALUATE_HAND, GET_HAND_STATS, CALCULATE_CARD_CHIPS, CALCULATE_CARD_MULT, CALCULATE_CARD_X_MULT, GENERATE_DECK, SORT_CARDS_BY_RANK } from './gameLogic';
+import { EVALUATE_HAND, GET_HAND_STATS, CALCULATE_CARD_CHIPS, CALCULATE_CARD_MULT, CALCULATE_CARD_X_MULT, GENERATE_DECK, SORT_CARDS_BY_RANK, CALCULATE_GOAL } from './gameLogic';
 
 const INITIAL_HAND_LEVELS: Record<PokerHand, number> = {
   'High Card': 1,
@@ -20,15 +20,21 @@ const INITIAL_HAND_LEVELS: Record<PokerHand, number> = {
 
 const HAND_SIZE = 8;
 
+const GET_BLIND_NAME = (round: number) => {
+  if (round === 1) return "Small Blind (小盲注)";
+  if (round === 2) return "Big Blind (大盲注)";
+  return "Boss Blind (首领盲注)";
+};
+
 const createInitialState = (): GameState => {
   const fullDeck = GENERATE_DECK();
   const initialHand = SORT_CARDS_BY_RANK(fullDeck.slice(0, HAND_SIZE));
   const remainingDeck = fullDeck.slice(HAND_SIZE);
 
   return {
-    currentBlind: "Small Blind (小盲注)",
+    currentBlind: GET_BLIND_NAME(1),
     score: 0,
-    goal: 300,
+    goal: CALCULATE_GOAL(1, 1),
     chips: 0,
     mult: 0,
     handsLeft: 4,
@@ -39,7 +45,9 @@ const createInitialState = (): GameState => {
     handLevels: INITIAL_HAND_LEVELS,
     cards: initialHand,
     deck: remainingDeck,
-    jokers: []
+    jokers: [],
+    ante: 1,
+    round: 1
   };
 };
 
@@ -152,7 +160,34 @@ const App: React.FC = () => {
   };
 
   const handleRestart = () => {
-    setState(createInitialState());
+    if (isRoundOver === 'victory') {
+      let nextRound = state.round + 1;
+      let nextAnte = state.ante;
+      if (nextRound > 3) {
+        nextRound = 1;
+        nextAnte += 1;
+      }
+
+      const fullDeck = GENERATE_DECK();
+      const initialHand = SORT_CARDS_BY_RANK(fullDeck.slice(0, HAND_SIZE));
+
+      setState(prev => ({
+        ...prev,
+        round: nextRound,
+        ante: nextAnte,
+        goal: CALCULATE_GOAL(nextAnte, nextRound),
+        score: 0,
+        handsLeft: 4,
+        discardsLeft: 3,
+        currentBlind: GET_BLIND_NAME(nextRound),
+        cards: initialHand,
+        deck: fullDeck.slice(HAND_SIZE),
+        money: prev.money + 5 // Reward for winning
+      }));
+    } else {
+      // Defeat -> Full Restart
+      setState(createInitialState());
+    }
     setIsRoundOver(null);
     setSelectedIds(new Set());
   };
@@ -166,6 +201,11 @@ const App: React.FC = () => {
       <main className="flex-1 flex flex-col relative">
         {/* Top Header */}
         <div className="p-12 pb-0 flex items-center gap-8">
+          <div className="flex flex-col">
+            <span className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest italic">Ante (底注阶级)</span>
+            <span className="text-xl font-medium tracking-tight text-white">{state.ante} / 8</span>
+          </div>
+          <div className="h-8 w-px bg-zinc-800" />
           <div className="flex flex-col">
             <span className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest italic">Current Hand (当前牌型)</span>
             <span className="text-xl font-medium tracking-tight text-white">{currentHandPreview?.hand || "Select Cards"}</span>

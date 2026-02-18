@@ -130,3 +130,12 @@ export const GET_RANK_VALUE = (rank: string): number => {
 export const SORT_CARDS_BY_RANK = (cards: CardData[]): CardData[] => {
     return [...cards].sort((a, b) => GET_RANK_VALUE(b.rank) - GET_RANK_VALUE(a.rank));
 };
+
+export const CALCULATE_GOAL = (ante: number, round: number): number => {
+    // Base goals for Ante 1
+    const ante1Goals = [300, 450, 600]; // Small, Big, Boss
+    const baseGoal = ante1Goals[Math.min(round - 1, 2)];
+
+    // Scale exponentially with Ante: Goal = Base * 1.5^(Ante-1)
+    return Math.floor(baseGoal * Math.pow(1.5, ante - 1));
+};

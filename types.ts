@@ -46,4 +46,6 @@ export interface GameState {
   cards: CardData[];
   deck: CardData[];
   jokers: string[]; // Joker IDs
+  ante: number;
+  round: number;
 }
