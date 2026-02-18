@@ -117,19 +117,19 @@ export const CALCULATE_GOAL = (ante: number, round: number): number => {
 
     // --- 修正部分：细化前 3 个 Ante 的数值 ---
     if (ante === 1) baseGoal = 375;        // Year 1-3. Round 1 = 375 * 0.8 = 300
-    else if (ante === 2) baseGoal = 1000;  // Year 4-6. Round 1 = 800
-    else if (ante === 3) baseGoal = 3200;  // Year 7-9. Round 1 = 2560
+    else if (ante === 2) baseGoal = 700;  // Year 4-6. Round 1 = 800
+    else if (ante === 3) baseGoal = 1000;  // Year 7-9. Round 1 = 2560
 
     // --- 后续保持原有逻辑 (Phase 8) ---
-    else if (ante <= 6) baseGoal = 25000;     // Year 10-18
-    else if (ante <= 10) baseGoal = 150000;   // Year 19-30 (The 150k target)
-    else if (ante <= 13) baseGoal = 1500000;  // Year 31-39
-    else if (ante <= 16) baseGoal = 10000000; // Year 40-48
-    else if (ante <= 20) baseGoal = 200000000;// Year 49-60
-    else if (ante <= 23) baseGoal = 2500000000; // Year 61-69
-    else if (ante <= 26) baseGoal = 50000000000;// Year 70-78
-    else if (ante <= 30) baseGoal = 1800000000000; // Year 79-90
-    else baseGoal = 10000000000000;            // Year 91-99 (Final Boss)
+    else if (ante <= 6) baseGoal = 2500;     // Year 10-18
+    else if (ante <= 10) baseGoal = 15000;   // Year 19-30 (The 150k target)
+    else if (ante <= 13) baseGoal = 150000;  // Year 31-39
+    else if (ante <= 16) baseGoal = 1000000; // Year 40-48
+    else if (ante <= 20) baseGoal = 20000000;// Year 49-60
+    else if (ante <= 23) baseGoal = 250000000; // Year 61-69
+    else if (ante <= 26) baseGoal = 5000000000;// Year 70-78
+    else if (ante <= 30) baseGoal = 180000000000; // Year 79-90
+    else baseGoal = 1000000000000;            // Year 91-99 (Final Boss)
 
     // Smooth Scaling within tiers (Ante 4+)
     // For Ante 1-3, we manually set bases, so we assume growth is 1 (subStage 0 logic applies or ignored)
