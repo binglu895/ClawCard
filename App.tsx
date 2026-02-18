@@ -4,7 +4,7 @@ import { Card } from './components/Card';
 import { Shop } from './components/Shop';
 import { Story } from './components/Story';
 import { GameState, CardData, PokerHand, Enhancement, Edition, Seal, GamePhase, Joker, Consumable } from './types';
-import { EVALUATE_HAND, GET_HAND_STATS, CALCULATE_CARD_CHIPS, CALCULATE_CARD_MULT, CALCULATE_CARD_X_MULT, GENERATE_DECK, SORT_CARDS_BY_RANK, CALCULATE_GOAL, GENERATE_SHOP_ITEMS, GET_JOKER_STATS, GET_JOKER_EFFECT_DISPLAY } from './gameLogic';
+import { EVALUATE_HAND, GET_HAND_STATS, CALCULATE_CARD_CHIPS, CALCULATE_CARD_MULT, CALCULATE_CARD_X_MULT, GENERATE_DECK, SORT_CARDS_BY_RANK, CALCULATE_GOAL, GENERATE_SHOP_ITEMS, GET_JOKER_STATS, GET_JOKER_EFFECT_DISPLAY, CONSUMABLE_POOL } from './gameLogic';
 import { audio } from './AudioEngine';
 
 const INITIAL_HAND_LEVELS: Record<PokerHand, number> = {
@@ -137,7 +137,7 @@ const App: React.FC = () => {
       }
     });
 
-    if (Object.values(state.equipment).some(j => j?.id === 'j_stuntman')) {
+    if ((Object.values(state.equipment) as (Joker | null)[]).some(j => j?.id === 'j_stuntman')) {
       // Hand size reduction is handled by not drawing more than limit, but for now we just apply stats
     }
 
@@ -303,8 +303,14 @@ const App: React.FC = () => {
   const handleUseConsumable = (consumable: Consumable) => {
     audio.playPlayHand();
     setState(prev => {
-      const newHandLevels = { ...prev.handLevels };
+      let newHandLevels = { ...prev.handLevels };
       let planetsUsed = prev.planetsUsed;
+      let newCards = [...prev.cards];
+      let newSpiritStones = prev.spiritStones;
+      let newCurrentBlind = prev.currentBlind;
+      let newConsumables = prev.consumables.filter(c => c.id !== consumable.id);
+
+      const selectedCards = newCards.filter(c => selectedIds.has(c.id));
 
       if (consumable.type === 'Planet') {
         planetsUsed++;
@@ -319,8 +325,68 @@ const App: React.FC = () => {
           'c_neptune': 'Straight Flush'
         };
         const hand = handMap[consumable.id];
-        if (hand) {
-          newHandLevels[hand]++;
+        if (hand) newHandLevels[hand]++;
+      } else {
+        // Mental Methods (Tarot)
+        switch (consumable.id) {
+          case 'c_the_fool': // Great Dream - Reroll Boss
+            const blindNames = ['Chi Gathering', 'Foundation', 'Golden Core', 'Nascent Soul', 'Spirit Severing', 'Dao Seeking', 'Immortal Ascent'];
+            newCurrentBlind = blindNames[Math.floor(Math.random() * blindNames.length)] + " (Rerolled)";
+            break;
+          case 'c_the_magician': // Sun-Moon Swap - Wild
+            selectedCards.forEach(c => c.enhancement = Enhancement.Wild);
+            break;
+          case 'c_the_empress': // Mult Avatar - Mult
+            selectedCards.slice(0, 2).forEach(c => c.enhancement = Enhancement.Mult);
+            break;
+          case 'c_the_hierophant': // Tendon Change - Bonus
+            selectedCards.slice(0, 2).forEach(c => c.enhancement = Enhancement.Bonus);
+            break;
+          case 'c_the_chariot': // Diamond Body - Steel
+            selectedCards.slice(0, 1).forEach(c => c.enhancement = Enhancement.Steel);
+            break;
+          case 'c_the_devil': // Demon Dissolution - Glass
+            selectedCards.slice(0, 1).forEach(c => c.enhancement = Enhancement.Glass);
+            break;
+          case 'c_the_tower': // Immovable King - Stone
+            selectedCards.slice(0, 1).forEach(c => c.enhancement = Enhancement.Stone);
+            break;
+          case 'c_the_emperor': // Point to Gold - Gold
+            selectedCards.slice(0, 1).forEach(c => c.enhancement = Enhancement.Gold);
+            break;
+          case 'c_the_temperance': // Spirit Toad - Double Money
+            const gain = Math.min(prev.spiritStones, 20);
+            newSpiritStones += gain;
+            break;
+          case 'c_the_hanged_man': // Slaying Three Corpses - Destroy
+            newCards = newCards.filter(c => !selectedIds.has(c.id));
+            setSelectedIds(new Set());
+            break;
+          case 'c_death': // Nirvana Finger - Clone
+            if (selectedCards.length >= 2) {
+              const left = selectedCards[0];
+              const rightIndex = newCards.findIndex(c => c.id === selectedCards[1].id);
+              if (rightIndex !== -1) {
+                newCards[rightIndex] = { ...left, id: Math.random().toString(36).substr(2, 9) };
+              }
+            }
+            break;
+          case 'c_the_hermit': // Celestial Omen - Spawn 2 Elixirs
+            const elixirs = CONSUMABLE_POOL.filter(c => c.type === 'Planet');
+            for (let i = 0; i < 2 && newConsumables.length < 2; i++) {
+              newConsumables.push({ ...elixirs[Math.floor(Math.random() * elixirs.length)] });
+            }
+            break;
+          case 'c_the_high_priestess': // External Avatar - Spawn 2 Scrolls
+            const scrolls = CONSUMABLE_POOL.filter(c => c.type === 'Tarot');
+            for (let i = 0; i < 2 && newConsumables.length < 2; i++) {
+              newConsumables.push({ ...scrolls[Math.floor(Math.random() * scrolls.length)] });
+            }
+            break;
+          case 'c_the_world': selectedCards.slice(0, 3).forEach(c => c.suit = 'SPADES'); break;
+          case 'c_the_sun': selectedCards.slice(0, 3).forEach(c => c.suit = 'HEARTS'); break;
+          case 'c_the_star': selectedCards.slice(0, 3).forEach(c => c.suit = 'DIAMONDS'); break;
+          case 'c_the_moon': selectedCards.slice(0, 3).forEach(c => c.suit = 'CLUBS'); break;
         }
       }
 
@@ -328,7 +394,10 @@ const App: React.FC = () => {
         ...prev,
         handLevels: newHandLevels,
         planetsUsed,
-        consumables: prev.consumables.filter(c => c.id !== consumable.id)
+        cards: newCards,
+        spiritStones: newSpiritStones,
+        currentBlind: newCurrentBlind,
+        consumables: newConsumables
       };
     });
   };

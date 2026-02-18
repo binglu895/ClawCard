@@ -13,7 +13,12 @@ export const EVALUATE_HAND = (cards: CardData[]): PokerHand => {
     });
 
     const sortedRanks = [...ranks].sort((a, b) => a - b);
-    const isFlush = Object.keys(suits).length === 1 && cards.length === 5;
+
+    // Wild cards can be any suit
+    const nonWildCards = cards.filter(c => c.enhancement !== Enhancement.Wild);
+    const distinctSuits = new Set(nonWildCards.map(c => c.suit));
+    const isFlush = cards.length === 5 && distinctSuits.size <= 1;
+
     const isStraight = cards.length === 5 && sortedRanks.every((r, i) => i === 0 || r === sortedRanks[i - 1] + 1);
     const countValues = Object.values(counts).sort((a, b) => b - a);
 
@@ -71,6 +76,7 @@ export const CALCULATE_CARD_CHIPS = (card: CardData): number => {
     if (card.enhancement === Enhancement.Stone) return 50;
 
     chips += rankVal;
+    if (card.enhancement === Enhancement.Bonus) chips += 30;
     if (card.edition === Edition.Foil) chips += 50;
 
     return chips;
@@ -78,6 +84,7 @@ export const CALCULATE_CARD_CHIPS = (card: CardData): number => {
 
 export const CALCULATE_CARD_MULT = (card: CardData): number => {
     let mult = 0;
+    if (card.enhancement === Enhancement.Mult) mult += 4;
     if (card.edition === Edition.Holographic) mult += 10;
     return mult;
 };
@@ -86,6 +93,7 @@ export const CALCULATE_CARD_X_MULT = (card: CardData): number => {
     let xMult = 1;
     if (card.edition === Edition.Polychrome) xMult *= 1.5;
     if (card.enhancement === Enhancement.Glass) xMult *= 2;
+    if (card.enhancement === Enhancement.Steel) xMult *= 1.5;
     return xMult;
 };
 
@@ -214,17 +222,34 @@ export const GET_JOKER_EFFECT_DISPLAY = (joker: Joker): string => {
 };
 
 export const CONSUMABLE_POOL: Consumable[] = [
-    { id: 'c_uranus', name: 'Uranus (天王星)', type: 'Planet', price: 3, effect: 'Level up Two Pair', description: '提升两对等级。' },
-    { id: 'c_venus', name: 'Venus (金星)', type: 'Planet', price: 3, effect: 'Level up Three of a Kind', description: '提升三条等级。' },
-    { id: 'c_saturn', name: 'Saturn (土星)', type: 'Planet', price: 3, effect: 'Level up Straight', description: '提升顺子等级。' },
-    { id: 'c_jupiter', name: 'Jupiter (木星)', type: 'Planet', price: 3, effect: 'Level up Flush', description: '提升同花等级。' },
-    { id: 'c_mars', name: 'Mars (火星)', type: 'Planet', price: 3, effect: 'Level up Four of a Kind', description: '提升四条等级。' },
-    { id: 'c_neptune', name: 'Neptune (海王星)', type: 'Planet', price: 3, effect: 'Level up Straight Flush', description: '提升同花顺等级。' },
-    { id: 'c_the_fool', name: 'The Fool (愚者)', type: 'Tarot', price: 3, effect: 'Create last Tarot/Planet', description: '创建最后使用的塔罗牌或行星牌。' },
-    { id: 'c_the_magician', name: 'The Magician (魔术师)', type: 'Tarot', price: 3, effect: 'Enhance 2 cards to Lucky', description: '将 2 张牌增强为幸运牌。' },
-    { id: 'c_the_empress', name: 'The Empress (女皇)', type: 'Tarot', price: 3, effect: 'Enhance 2 cards to Mult', description: '将 2 张牌增强为倍率牌。' },
-    { id: 'c_the_hierophant', name: 'The Hierophant (教皇)', type: 'Tarot', price: 3, effect: 'Enhance 2 cards to Bonus', description: '将 2 张牌增强为奖励牌。' },
-    { id: 'c_the_tower', name: 'The Tower (高塔)', type: 'Tarot', price: 3, effect: 'Enhance 1 card to Stone', description: '将 1 张牌增强为石头牌。' },
+    // Elixirs (Previously Planets)
+    { id: 'c_pluto', name: 'Pluto Elixir (冥王丹)', type: 'Planet', price: 3, effect: 'Level up High Card', description: '提升高牌等级。' },
+    { id: 'c_mercury', name: 'Mercury Elixir (水星丹)', type: 'Planet', price: 3, effect: 'Level up Pair', description: '提升对子等级。' },
+    { id: 'c_uranus', name: 'Uranus Elixir (天王丹)', type: 'Planet', price: 3, effect: 'Level up Two Pair', description: '提升两对等级。' },
+    { id: 'c_venus', name: 'Venus Elixir (金星丹)', type: 'Planet', price: 3, effect: 'Level up Three of a Kind', description: '提升三条等级。' },
+    { id: 'c_saturn', name: 'Saturn Elixir (土星丹)', type: 'Planet', price: 3, effect: 'Level up Straight', description: '提升顺子等级。' },
+    { id: 'c_jupiter', name: 'Jupiter Elixir (木星丹)', type: 'Planet', price: 3, effect: 'Level up Flush', description: '提升同花等级。' },
+    { id: 'c_mars', name: 'Mars Elixir (火星丹)', type: 'Planet', price: 3, effect: 'Level up Four of a Kind', description: '提升四条等级。' },
+    { id: 'c_neptune', name: 'Neptune Elixir (海王丹)', type: 'Planet', price: 3, effect: 'Level up Straight Flush', description: '提升同花顺等级。' },
+
+    // Mental Methods / Scrolls (Previously Tarot)
+    { id: 'c_the_fool', name: 'Great Dream (大梦谁先觉)', type: 'Tarot', price: 3, effect: 'Reroll Boss', description: '重新随机当前劫难（首领）。' },
+    { id: 'c_the_magician', name: 'Sun-Moon Swap (偷天换日法)', type: 'Tarot', price: 3, effect: 'Enhance 1 card to Wild', description: '将 1 张手牌变为万能牌（Wild）。' },
+    { id: 'c_the_empress', name: 'Mult Avatar (多重影分身)', type: 'Tarot', price: 3, effect: 'Enhance 2 cards to Mult', description: '将 2 张手牌变为倍率增强牌。' },
+    { id: 'c_the_hierophant', name: 'Tendon Change (易筋洗髓经)', type: 'Tarot', price: 3, effect: 'Enhance 2 cards to Bonus', description: '将 2 张手牌变为奖励筹码牌。' },
+    { id: 'c_the_chariot', name: 'Diamond Body (金刚不坏身)', type: 'Tarot', price: 3, effect: 'Enhance 1 card to Steel', description: '将 1 张手牌变为钢制牌（Steel）。' },
+    { id: 'c_the_devil', name: 'Demon Dissolution (天魔解体)', type: 'Tarot', price: 3, effect: 'Enhance 1 card to Glass', description: '将 1 张手牌变为玻璃牌（Glass）。' },
+    { id: 'c_the_tower', name: 'Immovable King (不动明王)', type: 'Tarot', price: 3, effect: 'Enhance 1 card to Stone', description: '将 1 张手牌变为石头牌（Stone）。' },
+    { id: 'c_the_temperance', name: 'Spirit Toad (聚宝金蟾)', type: 'Tarot', price: 3, effect: 'Double Spirit Stones (Max +20)', description: '灵石翻倍（最高额外+20）。' },
+    { id: 'c_the_hanged_man', name: 'Slaying Three Corpses (斩三尸)', type: 'Tarot', price: 3, effect: 'Destroy 2 cards', description: '摧毁选中的最多 2 张牌。' },
+    { id: 'c_death', name: 'Nirvana Finger (寂灭指)', type: 'Tarot', price: 3, effect: 'Clone Left to Right', description: '将左侧卡牌复制到右侧。' },
+    { id: 'c_the_hermit', name: 'Celestial Omen (天机推演)', type: 'Tarot', price: 3, effect: 'Create 2 Elixirs', description: '随机获得 2 颗丹药。' },
+    { id: 'c_the_high_priestess', name: 'External Avatar (身外化身)', type: 'Tarot', price: 2, effect: 'Create 2 Scrolls', description: '随机获得 2 卷锦囊。' },
+    { id: 'c_the_emperor', name: 'Point to Gold (点石成金)', type: 'Tarot', price: 3, effect: 'Enhance 1 card to Gold', description: '将 1 张手牌变为黄金牌。' },
+    { id: 'c_the_world', name: 'Four Symbols: Spades (四象阵：玄武)', type: 'Tarot', price: 3, effect: 'Change 3 cards to Spades', description: '将 3 张手牌变为黑桃。' },
+    { id: 'c_the_sun', name: 'Four Symbols: Hearts (四象阵：朱雀)', type: 'Tarot', price: 3, effect: 'Change 3 cards to Hearts', description: '将 3 张手牌变为红桃。' },
+    { id: 'c_the_star', name: 'Four Symbols: Diamonds (四象阵：白虎)', type: 'Tarot', price: 3, effect: 'Change 3 cards to Diamonds', description: '将 3 张手牌变为方块。' },
+    { id: 'c_the_moon', name: 'Four Symbols: Clubs (四象阵：青龙)', type: 'Tarot', price: 3, effect: 'Change 3 cards to Clubs', description: '将 3 张手牌变为梅花。' },
 ];
 
 export const GENERATE_SHOP_ITEMS = (): { jokers: Joker[], consumables: Consumable[] } => {

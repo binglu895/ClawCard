@@ -105,7 +105,7 @@ export const Shop: React.FC<ShopProps> = ({ state, shopItems, onBuyJoker, onBuyC
                     <div className="space-y-6">
                         <h2 className="text-xl font-bold text-zinc-400 uppercase tracking-widest flex items-center gap-3">
                             <span className="w-8 h-[2px] bg-mult-red"></span>
-                            Treasures (资源)
+                            Mental Methods (锦囊/丹药)
                         </h2>
                         <div className="grid grid-cols-2 gap-6">
                             {shopItems.consumables.map(item => (
@@ -121,7 +121,7 @@ export const Shop: React.FC<ShopProps> = ({ state, shopItems, onBuyJoker, onBuyC
                                         <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded border mb-3 inline-block
                                           ${item.type === 'Planet' ? 'text-primary border-primary' : 'text-mult-red border-mult-red'}
                                         `}>
-                                            {item.type === 'Planet' ? 'Manual' : 'Incense'}
+                                            {item.type === 'Planet' ? 'Elixir' : 'Scroll'}
                                         </span>
                                         <h3 className="text-xl font-bold text-white mb-2">{item.name}</h3>
                                         <p className="text-xs text-zinc-500 leading-relaxed">{item.description}</p>

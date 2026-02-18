@@ -1,6 +1,6 @@
 export type Suit = 'HEARTS' | 'SPADES' | 'DIAMONDS' | 'CLUBS';
 
-export enum Enhancement { None = 'None', Stone = 'Stone', Steel = 'Steel', Gold = 'Gold', Glass = 'Glass' }
+export enum Enhancement { None = 'None', Stone = 'Stone', Steel = 'Steel', Gold = 'Gold', Glass = 'Glass', Wild = 'Wild', Mult = 'Mult', Bonus = 'Bonus' }
 export enum Edition { None = 'None', Foil = 'Foil', Holographic = 'Holographic', Polychrome = 'Polychrome' }
 export enum Seal { None = 'None', Red = 'Red', Blue = 'Blue', Gold = 'Gold', Purple = 'Purple' }
 
