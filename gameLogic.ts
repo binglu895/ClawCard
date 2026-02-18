@@ -168,71 +168,68 @@ export const GET_CURRENT_TIER = (year: number): number => {
 };
 
 export const GENERATE_SHOP_ITEMS = (year: number, currentEquipment: Record<string, Joker | null>) => {
-    // 1. Analyze Equipment to find Dominant Tier
-    const items = Object.values(currentEquipment).filter((j): j is Joker => j !== null);
+    const MAX_LEVEL = 3;
+
+    // 1. Identify Dominant Tier
+    const equippedItems = Object.values(currentEquipment).filter((j): j is Joker => j !== null);
     const tierCounts = [0, 0, 0, 0, 0, 0];
-    items.forEach(j => {
+    equippedItems.forEach(j => {
         const t = GET_ITEM_TIER(j.id);
         if (t >= 1 && t <= 5) tierCounts[t]++;
     });
 
-    // Find Tier with most items. If empty, fallback to Current Year Tier.
-    let dominantTier = 0;
-    let maxCount = -1;
-    for (let i = 1; i <= 5; i++) {
-        if (tierCounts[i] > maxCount) {
-            maxCount = tierCounts[i];
-            dominantTier = i;
-        }
-    }
-    if (maxCount <= 0) dominantTier = GET_CURRENT_TIER(year);
+    let dominantTier = tierCounts.indexOf(Math.max(...tierCounts));
+    if (dominantTier <= 0) dominantTier = GET_CURRENT_TIER(year);
 
-    // 2. Prepare Pools
-    // Pool A: Target Set Items (Dominant Tier)
-    const setPool = JOKER_POOL.filter(j => GET_ITEM_TIER(j.id) === dominantTier);
+    // 2. Build Pools (Filter out Max Level items)
+    const isMaxLevel = (baseId: string) => {
+        const equipped = equippedItems.find(e => e.id === baseId);
+        return equipped && equipped.level && equipped.level >= MAX_LEVEL;
+    };
 
-    // Pool B: General Items (Current Tier +/- 1)
+    const setPool = JOKER_POOL.filter(j => GET_ITEM_TIER(j.id) === dominantTier && !isMaxLevel(j.id));
     const currentStageTier = GET_CURRENT_TIER(year);
-    const generalPool = JOKER_POOL.filter(j => Math.abs(GET_ITEM_TIER(j.id) - currentStageTier) <= 1);
+    const generalPool = JOKER_POOL.filter(j => Math.abs(GET_ITEM_TIER(j.id) - currentStageTier) <= 1 && !isMaxLevel(j.id));
 
     // 3. Select 5 Unique Artifacts
     const selectedJokers: Joker[] = [];
     const selectedIds = new Set<string>();
 
-    // Helper to add random unique item from a specific list
-    const addUnique = (sourceList: Joker[]) => {
-        // Filter out items already selected in this shop batch (based on base ID without shop suffix/prefix)
+    const addUniqueJoker = (sourceList: Joker[]) => {
         const available = sourceList.filter(j => !selectedIds.has(j.id));
-        if (available.length === 0) return;
+        if (available.length === 0) return false;
 
         const pick = available[Math.floor(Math.random() * available.length)];
-        // Create a unique instance ID for the shop
-        selectedJokers.push({ ...pick, id: `shop_${Math.random().toString(36).substr(2, 5)}_${pick.id}` });
-        selectedIds.add(pick.id); // Track base ID to prevent dupes on shelf
+        selectedIds.add(pick.id);
+
+        // ★ CRITICAL FIX: Sync Level for merging
+        let spawnLevel = 1;
+        const equippedMatch = equippedItems.find(e => e.id === pick.id);
+        if (equippedMatch && equippedMatch.level) {
+            spawnLevel = equippedMatch.level;
+        }
+
+        // Keep original ID to ensure merging works in App.tsx
+        selectedJokers.push({ ...pick, level: spawnLevel });
+        return true;
     };
 
-    // Step 3a: Force 3 items from Set Pool
-    for (let i = 0; i < 3; i++) addUnique(setPool);
+    // Force 3 items from Dominant Set
+    for (let i = 0; i < 3; i++) addUniqueJoker(setPool);
 
-    // Step 3b: Fill remaining (up to 5 total) from General Pool
-    while (selectedJokers.length < 5) {
-        const prevLength = selectedJokers.length;
-        addUnique(generalPool);
-        // If we couldn't add anymore from general pool, try the whole JOKER_POOL
-        if (selectedJokers.length === prevLength) {
-            addUnique(JOKER_POOL);
-        }
-        // Safety break if pools are exhausted
-        if (selectedJokers.length === prevLength) break;
+    // Fill remaining slots (up to 5) from General Pool
+    let safetyCounter = 0;
+    while (selectedJokers.length < 5 && safetyCounter < 20) {
+        addUniqueJoker(generalPool);
+        safetyCounter++;
     }
 
     // 4. Select 3 Consumables
     const consumables = [];
-    const cPool = [...CONSUMABLE_POOL];
+    const cPool = CONSUMABLE_POOL;
     for (let i = 0; i < 3; i++) {
-        const idx = Math.floor(Math.random() * cPool.length);
-        const pick = cPool[idx];
-        consumables.push({ ...pick, id: `shop_c_${Math.random()}` });
+        const pick = cPool[Math.floor(Math.random() * cPool.length)];
+        consumables.push({ ...pick, id: `shop_c_${Math.random().toString(36).substring(2, 9)}` });
     }
 
     return { jokers: selectedJokers, consumables };

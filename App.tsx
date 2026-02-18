@@ -263,10 +263,11 @@ const App: React.FC = () => {
       setState(prev => ({
         ...prev,
         phase: GamePhase.Shop,
-        spiritStones: prev.spiritStones + 5
+        spiritStones: prev.spiritStones + 5 // Base reward
       }));
-      setShopItems(GENERATE_SHOP_ITEMS(state.year, state.equipment));
-      setRerollCost(5); // Reset reroll price for new shop
+
+      setRerollCost(5); // ★ RESET REROLL COST HERE
+      setShopItems(GENERATE_SHOP_ITEMS(state.year + 1, state.equipment));
     } else {
       if (state.lives > 1) {
         // Retry Mechanic
@@ -309,14 +310,13 @@ const App: React.FC = () => {
   const handleReroll = () => {
     if (state.spiritStones >= rerollCost) {
       audio.playCardSelect();
-
       setState(prev => ({
         ...prev,
         spiritStones: prev.spiritStones - rerollCost
       }));
-
+      // Regenerate shop with current year and equipment logic
       setShopItems(GENERATE_SHOP_ITEMS(state.year, state.equipment));
-      setRerollCost(prev => prev + 1);
+      setRerollCost(prev => prev + 1); // Increase cost
     }
   };
 
