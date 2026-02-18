@@ -70,7 +70,7 @@ export const Story: React.FC<StoryProps> = ({ state, onComplete }) => {
 
                 <div className="w-full bg-zinc-900/80 border border-white/10 p-10 rounded-3xl min-h-[200px] flex flex-col justify-between shadow-2xl relative">
                     <div className="absolute -top-3 left-10 px-4 py-1 bg-primary text-white text-[10px] font-black uppercase tracking-widest rounded-full">
-                        The Dealer (发牌员)
+                        The Heavenly System (天道系统)
                     </div>
 
                     <p className="text-2xl font-medium text-white leading-relaxed mb-8 animate-in slide-in-from-bottom-2 duration-500">
