@@ -81,6 +81,10 @@ export interface GameState {
   storyProgress: number;
   planetsUsed: number;
   consumablesUsed: number;
+  bonusHands: number;
+  bonusDiscards: number;
+  lives: number;
+  maxLives: number;
   handPlayCounts: Record<string, number>;
   karma: number;      // Phase 3: Good/Evil
   obsession: number;  // Phase 3: Madness

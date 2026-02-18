@@ -112,19 +112,80 @@ export const SORT_CARDS_BY_RANK = (cards: CardData[]): CardData[] => {
 };
 
 export const CALCULATE_GOAL = (ante: number, round: number): number => {
-    const base = 300;
-    const roundMultiplier = round === 3 ? 2 : round === 2 ? 1.5 : 1;
-    return Math.floor(base * Math.pow(2.5, ante - 1) * roundMultiplier);
+    // Ante = Math.floor((year - 1) / 3) + 1
+    let baseGoal = 0;
+
+    if (ante <= 3) baseGoal = 3000;           // Year 1-9
+    else if (ante <= 6) baseGoal = 25000;     // Year 10-18
+    else if (ante <= 10) baseGoal = 150000;   // Year 19-30 (The 150k target)
+    else if (ante <= 13) baseGoal = 1500000;  // Year 31-39
+    else if (ante <= 16) baseGoal = 10000000; // Year 40-48
+    else if (ante <= 20) baseGoal = 200000000;// Year 49-60
+    else if (ante <= 23) baseGoal = 2500000000; // Year 61-69
+    else if (ante <= 26) baseGoal = 50000000000;// Year 70-78
+    else if (ante <= 30) baseGoal = 1800000000000; // Year 79-90 (1.8 Trillion)
+    else baseGoal = 10000000000000;            // Year 91-99 (Final Boss)
+
+    const subStage = (ante - 1) % 3;
+    const growth = Math.pow(1.5, subStage);
+    const roundMod = round === 1 ? 0.8 : round === 2 ? 1.2 : 2.0;
+
+    let finalGoal = baseGoal * growth * roundMod;
+
+    if (finalGoal > 1000000000) return Math.floor(finalGoal / 100000000) * 100000000;
+    return Math.floor(finalGoal / 100) * 100;
 };
 
-export const GENERATE_SHOP_ITEMS = (ante: number): { jokers: Joker[], consumables: Consumable[] } => {
+export const GET_REALM_MULTIPLIER = (year: number): number => {
+    if (year < 20) return 1;       // Qi Refining
+    if (year < 40) return 5;       // Foundation (筑基) - Solves the mid-game wall
+    if (year < 60) return 25;      // Golden Core (金丹)
+    if (year < 80) return 100;     // Nascent Soul (元婴)
+    return 500;                    // Demigod (化神) - Massive jump for endgame
+};
+
+export const GENERATE_SHOP_ITEMS = (ante: number, equipment: Record<string, Joker | null>, year: number): { jokers: Joker[], consumables: Consumable[] } => {
     const jokers: Joker[] = [];
-    const pool = [...JOKER_POOL];
+    const equipped = Object.values(equipment).filter(j => j !== null) as Joker[];
+
+    // Identify dominant set
+    const setCounts: Record<string, number> = {};
+    equipped.forEach(j => {
+        const setID = j.id.split('_')[1]; // e.g. 'v' for 'j_v_head'
+        setCounts[setID] = (setCounts[setID] || 0) + 1;
+    });
+    const dominantSet = Object.entries(setCounts).sort((a, b) => b[1] - a[1])[0]?.[0];
+
     for (let i = 0; i < 2; i++) {
-        if (pool.length > 0) {
-            const idx = Math.floor(Math.random() * pool.length);
-            jokers.push({ ...pool[idx], id: `shop_joker_${Math.random()}` });
-            pool.splice(idx, 1);
+        const roll = Math.random();
+        let selected: Joker | null = null;
+
+        if (roll < 0.3 && equipped.length > 0) {
+            // UPGRADE: Spawn exact copy of an equipped item (if level < 3)
+            const targets = equipped.filter(j => (j.level || 1) < 3);
+            if (targets.length > 0) {
+                const target = targets[Math.floor(Math.random() * targets.length)];
+                // Find original in JOKER_POOL to get clean stats
+                const original = JOKER_POOL.find(j => j.id === target.id);
+                if (original) selected = { ...original };
+            }
+        } else if (roll < 0.5 && dominantSet) {
+            // COMPLETION: Spawn missing item from dominant set
+            const setPrefix = `j_${dominantSet}_`;
+            const missing = JOKER_POOL.filter(j => j.id.startsWith(setPrefix) && !equipped.some(ej => ej.id === j.id));
+            if (missing.length > 0) {
+                selected = { ...missing[Math.floor(Math.random() * missing.length)] };
+            }
+        }
+
+        if (!selected) {
+            // STANDARD: Random from pool
+            const pool = JOKER_POOL.filter(j => !equipped.some(ej => ej.id === j.id));
+            selected = { ...pool[Math.floor(Math.random() * pool.length)] };
+        }
+
+        if (selected) {
+            jokers.push({ ...selected, id: `${selected.id}_shop_${Math.random()}` });
         }
     }
 
@@ -177,57 +238,134 @@ export const JOKER_POOL: Joker[] = [
     { id: 'j_n_acc', name: 'Nirvana Heart (无我心)', rarity: 'Rare', level: 1, slot: 'Accessory', price: 25, effect: 'x1.1 Mult per year passed', description: '心如止水，映照万物。' },
 ];
 
+// --- Tiers mapping helper ---
+export const GET_ITEM_TIER = (jokerId: string): number => {
+    const code = jokerId.split('_')[1];
+    const mapping: Record<string, number> = { 'v': 1, 'i': 2, 'b': 3, 'c': 4, 'n': 5 };
+    return mapping[code] || 0;
+};
+
+export const CALCULATE_SET_BONUS = (equipment: Record<string, Joker | null>): { bonusHands: number, bonusDiscards: number, dominantTier: number, maxCount: number } => {
+    const items = Object.values(equipment).filter((j): j is Joker => j !== null);
+
+    // Count items per Tier
+    const tierCounts = [0, 0, 0, 0, 0, 0];
+    let totalNirvanaLevel = 0;
+
+    items.forEach(j => {
+        const tier = GET_ITEM_TIER(j.id);
+        if (tier >= 1 && tier <= 5) {
+            tierCounts[tier]++;
+            if (tier === 5) totalNirvanaLevel += (j.level || 1);
+        }
+    });
+
+    // Find Dominant Tier
+    let maxCount = 0;
+    let dominantTier = 0;
+    tierCounts.forEach((count, tier) => {
+        if (count > maxCount) {
+            maxCount = count;
+            dominantTier = tier;
+        }
+    });
+
+    // Calculate Bonus
+    let bonusHands = 0;
+    let bonusDiscards = 0;
+
+    if (maxCount >= 3) { bonusHands = 1; bonusDiscards = 1; }
+    if (maxCount >= 4) { bonusHands = 2; bonusDiscards = 2; }
+    if (maxCount >= 5) { bonusHands = 3; bonusDiscards = 3; }
+
+    // Nirvana Special (Tier 5, 5-Piece)
+    if (dominantTier === 5 && maxCount === 5) {
+        const avgLevel = Math.floor(totalNirvanaLevel / 5);
+        bonusHands += avgLevel;
+        bonusDiscards += avgLevel;
+    }
+
+    return { bonusHands, bonusDiscards, dominantTier, maxCount };
+};
+
+// --- 1. Helper Function for Scaling ---
+const getScaledStat = (base: number, level: number): number => {
+    if (level === 1) return base;
+    if (level === 2) return Math.floor(base * 2.5);
+    return base * 6; // Massive spike for Max Level
+};
+
 export const GET_JOKER_STATS = (joker: Joker, state: GameState, selectedCards: CardData[], currentHand: PokerHand): { tao: number, mult: number, xMult: number } => {
+    const lvl = Math.min(joker.level || 1, 3); // Cap at 3
     let tao = 0;
     let mult = 0;
     let xMult = 1.0;
 
-    const isFace = (rank: string) => ['J', 'Q', 'K'].includes(rank);
     const isEven = (rank: string) => ['2', '4', '6', '8', '10', 'Q'].includes(rank);
 
     switch (joker.id) {
-        // Verdant Set
-        case 'j_v_head': tao += 10; break;
-        case 'j_v_hand': mult += 2; break;
-        case 'j_v_leg': tao += 5 * selectedCards.length; break;
-        case 'j_v_body': tao += 15; break;
-        case 'j_v_acc': mult += 2; break;
+        // --- 1. Verdant Set (翠竹 - Tier 1) ---
+        case 'j_v_head': tao = getScaledStat(15, lvl); break;
+        case 'j_v_hand': mult = getScaledStat(3, lvl); break;
+        case 'j_v_leg': tao = getScaledStat(5, lvl) * selectedCards.length; break;
+        case 'j_v_body': tao = getScaledStat(20, lvl); break;
+        case 'j_v_acc': mult = getScaledStat(3, lvl); break;
 
-        // Iron Set
-        case 'j_i_head': tao += 30; break;
+        // --- 2. Iron Set (玄铁 - Tier 2) ---
+        case 'j_i_head': tao = getScaledStat(80, lvl); break;
         case 'j_i_hand':
             const ironSuits = selectedCards.filter(c => c.suit === 'SPADES' || c.suit === 'CLUBS').length;
-            mult += 4 * ironSuits;
+            if (ironSuits > 0) mult = getScaledStat(8, lvl) * ironSuits;
             break;
         case 'j_i_leg':
             const evenCards = selectedCards.filter(c => isEven(c.rank)).length;
-            tao += 30 * evenCards;
+            tao = getScaledStat(35, lvl) * evenCards;
             break;
-        case 'j_i_body': tao += 50; break;
+        case 'j_i_body': tao = getScaledStat(100, lvl); break;
         case 'j_i_acc':
-            if (currentHand.includes('Pair') || currentHand.includes('Kind') || currentHand === 'Full House') mult += 5;
+            if (currentHand.includes('Pair') || currentHand.includes('Kind') || currentHand === 'Full House') {
+                mult = getScaledStat(10, lvl);
+            }
             break;
 
-        // Breath Set
-        case 'j_b_head': tao += 10 * state.handsLeft; break;
-        case 'j_b_hand': mult += 1 * state.deck.length; break;
-        case 'j_b_leg': break; // Retrigger handled in main loop
+        // --- 3. Breath Set (吐纳 - Tier 3) ---
+        case 'j_b_head': tao = getScaledStat(25, lvl) * state.handsLeft; break;
+        case 'j_b_hand': mult = getScaledStat(2, lvl) * state.deck.length; break;
+        case 'j_b_leg': break; // Retrigger handled in App.tsx
         case 'j_b_body': break; // $1 handled in handlePlayHand
-        case 'j_b_acc': mult += 0.5 * state.spiritStones; break;
+        case 'j_b_acc': mult = getScaledStat(1, lvl) * state.spiritStones; break;
 
-        // Cosmic Set
-        case 'j_c_head': tao += 150; break;
-        case 'j_c_hand': mult += 15; break;
-        case 'j_c_leg': break; // Retrigger handled in main loop
-        case 'j_c_body': break; // Hand Size handled in INITIAL_STATE and re-draw
-        case 'j_c_acc': if (state.handsLeft === 1) xMult *= 2; break;
+        // --- 4. Cosmic Set (乾坤 - Tier 4) ---
+        case 'j_c_head': tao = getScaledStat(300, lvl); break;
+        case 'j_c_hand': mult = getScaledStat(30, lvl); break;
+        case 'j_c_leg': break; // Retrigger handled in App.tsx
+        case 'j_c_body': break; // Hand Size handled in INITIAL_STATE
+        case 'j_c_acc':
+            // X-Mult Scaling: Lv1: x1.5, Lv2: x2, Lv3: x4
+            if (state.handsLeft === 1) xMult = lvl === 3 ? 4 : (1 + 0.5 * lvl);
+            break;
 
-        // Nirvana Set
-        case 'j_n_head': xMult *= 1.5; break;
-        case 'j_n_hand': xMult *= Math.pow(1.2, selectedCards.length); break;
-        case 'j_n_leg': if (currentHand === 'Flush') xMult *= 3; break;
-        case 'j_n_body': xMult *= (1 + 0.2 * state.consumablesUsed); break;
-        case 'j_n_acc': xMult *= Math.pow(1.1, state.year); break;
+        // --- 5. Nirvana Set (无我 - Tier 5) ---
+        case 'j_n_head':
+            // Lv1: x1.5, Lv2: x2.5, Lv3: x5.0
+            xMult = lvl === 1 ? 1.5 : (lvl === 2 ? 2.5 : 5.0);
+            break;
+        case 'j_n_hand':
+            // Exponential per-card scaling: Lv1: 1.2, Lv2: 1.3, Lv3: 1.5
+            const perCardX = lvl === 1 ? 1.2 : (lvl === 2 ? 1.3 : 1.5);
+            xMult = Math.pow(perCardX, selectedCards.length);
+            break;
+        case 'j_n_leg':
+            if (currentHand === 'Flush') xMult = lvl === 1 ? 2 : (lvl === 2 ? 4 : 8);
+            break;
+        case 'j_n_body':
+            xMult = 1 + (0.2 * lvl) * state.consumablesUsed;
+            break;
+        case 'j_n_acc':
+            // Scaling year bonus: Lv1: 1.1^yr, Lv2: 1.2^yr, Lv3: 1.3^yr
+            const yearBase = 1 + (0.05 * getScaledStat(2, lvl));
+            xMult = Math.pow(yearBase, state.year);
+            break;
     }
 
     return { tao, mult, xMult };
@@ -259,7 +397,10 @@ export const CONSUMABLE_POOL: Consumable[] = [
     { id: 'c_world', name: 'Stars Alignment (星辰变)', type: 'Tarot', price: 4, effect: 'Convert 3 cards to Spades', description: '移星换斗，改天换日。' },
     { id: 'c_sun', name: 'Solar Flare (烈阳真意)', type: 'Tarot', price: 4, effect: 'Convert 3 cards to Hearts', description: '烈阳当空，诸邪避让。' },
     { id: 'c_moon', name: 'Moonlight (冷月清辉)', type: 'Tarot', price: 4, effect: 'Convert 3 cards to Clubs', description: '清辉遍洒，万籁俱寂。' },
-    { id: 'c_star', name: 'Starfall (陨星碎)', type: 'Tarot', price: 4, effect: 'Convert 3 cards to Diamonds', description: '星陨如雨，碎裂虚空。' }
+    { id: 'c_star', name: 'Starfall (陨星碎)', type: 'Tarot', price: 4, effect: 'Convert 3 cards to Diamonds', description: '星陨如雨，碎裂虚空。' },
+    { id: 'c_stat_hands', name: 'Nine-Orifice Pill (九窍渡劫丹)', type: 'Planet', price: 25, effect: 'Permanently +1 Hand/Round', description: '九窍齐开，神清气爽。' },
+    { id: 'c_stat_discard', name: 'Divine Travel Charm (神行太保符)', type: 'Tarot', price: 20, effect: 'Permanently +1 Discard/Round', description: '日行千里，神速无双。' },
+    { id: 'c_life_potion', name: 'Soul Mending Pill (回魂丹)', type: 'Tarot', price: 15, effect: 'Recover 1 Life (True Yuan)', description: '修补神魂，再续仙路。' }
 ];
 
 export const EVENT_POOL: GameEvent[] = [

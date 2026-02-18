@@ -6,7 +6,7 @@ import { Story, DIALOGUES } from './components/Story';
 import { EventOverlay } from './components/EventOverlay';
 import { EndingOverlay } from './components/EndingOverlay';
 import { GameState, CardData, PokerHand, Enhancement, Edition, Seal, GamePhase, Joker, Consumable, Choice } from './types';
-import { EVALUATE_HAND, GET_HAND_STATS, CALCULATE_CARD_CHIPS, CALCULATE_CARD_MULT, CALCULATE_CARD_X_MULT, GENERATE_DECK, SORT_CARDS_BY_RANK, CALCULATE_GOAL, GENERATE_SHOP_ITEMS, GET_JOKER_STATS, GET_JOKER_EFFECT_DISPLAY, CONSUMABLE_POOL, JOKER_POOL, GET_RANDOM_EVENT } from './gameLogic';
+import { EVALUATE_HAND, GET_HAND_STATS, CALCULATE_CARD_CHIPS, CALCULATE_CARD_MULT, CALCULATE_CARD_X_MULT, GENERATE_DECK, SORT_CARDS_BY_RANK, CALCULATE_GOAL, GENERATE_SHOP_ITEMS, GET_JOKER_STATS, GET_JOKER_EFFECT_DISPLAY, CONSUMABLE_POOL, JOKER_POOL, GET_RANDOM_EVENT, GET_REALM_MULTIPLIER, CALCULATE_SET_BONUS } from './gameLogic';
 import { audio } from './AudioEngine';
 
 const INITIAL_HAND_LEVELS: Record<PokerHand, number> = {
@@ -74,6 +74,10 @@ const createInitialState = (): GameState => {
     storyProgress: 0,
     planetsUsed: 0,
     consumablesUsed: 0,
+    bonusHands: 0,
+    bonusDiscards: 0,
+    lives: 3,
+    maxLives: 3,
     handPlayCounts: {},
     karma: 0,
     obsession: 0,
@@ -81,11 +85,29 @@ const createInitialState = (): GameState => {
   };
 };
 
+const SAVE_KEY = 'xiuxian_save_v1';
+
 const App: React.FC = () => {
-  const [state, setState] = useState<GameState>(createInitialState());
+  const [state, setState] = useState<GameState>(() => {
+    const saved = localStorage.getItem(SAVE_KEY);
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error("Failed to load save:", e);
+      }
+    }
+    return createInitialState();
+  });
+
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isRoundOver, setIsRoundOver] = useState<'victory' | 'defeat' | null>(null);
-  const [shopItems, setShopItems] = useState(() => GENERATE_SHOP_ITEMS(1));
+  const [shopItems, setShopItems] = useState(() => GENERATE_SHOP_ITEMS(1, {}, 0));
+
+  // Auto-save on state change
+  useEffect(() => {
+    localStorage.setItem(SAVE_KEY, JSON.stringify(state));
+  }, [state]);
   const [currentEvent, setCurrentEvent] = useState<any>(null); // To be typed
   const [endingInfo, setEndingInfo] = useState<{ title: string; text: string; isTrue: boolean } | null>(null);
 
@@ -132,13 +154,15 @@ const App: React.FC = () => {
       // Hand size reduction is handled by not drawing more than limit, but for now we just apply stats
     }
 
+    const realmX = GET_REALM_MULTIPLIER(state.year);
+
     return {
       hand,
       level,
       chips,
       mult,
       xMult,
-      total: Math.floor(chips * mult * xMult)
+      total: Math.floor(chips * mult * xMult * realmX)
     };
   }, [selectedCards, state.handLevels, state.equipment]);
 
@@ -238,15 +262,45 @@ const App: React.FC = () => {
       setState(prev => ({
         ...prev,
         phase: GamePhase.Shop,
-        spiritStones: prev.spiritStones + 5 // Reward moved here so it's available in shop
+        spiritStones: prev.spiritStones + 5
       }));
-      setShopItems(GENERATE_SHOP_ITEMS(state.ante));
+      setShopItems(GENERATE_SHOP_ITEMS(state.ante, state.equipment, state.year));
     } else {
-      audio.playDefeat();
-      setState(createInitialState());
+      if (state.lives > 1) {
+        // Retry Mechanic
+        alert("Tribulation Failed! Consuming Essence to retry... (真元护体，逆转时空)");
+        setState(prev => {
+          const fullDeck = GENERATE_DECK();
+          const initialHand = SORT_CARDS_BY_RANK(fullDeck.slice(0, HAND_SIZE));
+          const setBonuses = CALCULATE_SET_BONUS(prev.equipment);
+          return {
+            ...prev,
+            lives: prev.lives - 1,
+            tao: 0,
+            cards: initialHand,
+            deck: fullDeck.slice(HAND_SIZE),
+            handsLeft: 4 + prev.bonusHands + setBonuses.bonusHands, // Reset to standard for the round + bonuses
+            discardsLeft: 3 + prev.bonusDiscards + setBonuses.bonusDiscards
+          };
+        });
+      } else {
+        audio.playDefeat();
+        localStorage.removeItem(SAVE_KEY);
+        setState(createInitialState());
+      }
     }
     setIsRoundOver(null);
     setSelectedIds(new Set());
+  };
+
+  const resetGame = () => {
+    if (window.confirm("Restart Ascension? All progress will be lost. (重走仙路？当前进度将永久丢失)")) {
+      localStorage.removeItem(SAVE_KEY);
+      setState(createInitialState());
+      setSelectedIds(new Set());
+      setIsRoundOver(null);
+      setShopItems(GENERATE_SHOP_ITEMS(1, {}, 0));
+    }
   };
 
   const handleBuyJoker = (artifact: Joker) => {
@@ -310,8 +364,17 @@ const App: React.FC = () => {
       let newSpiritStones = prev.spiritStones;
       let newCurrentBlind = prev.currentBlind;
       let newConsumables = [...prev.consumables].filter(c => c.id !== consumable.id);
+      let newBonusHands = prev.bonusHands;
+      let newBonusDiscards = prev.bonusDiscards;
 
       const selectedIdsList = Array.from(selectedIds);
+
+      let newLives = prev.lives;
+      if (consumable.id === 'c_stat_hands') newBonusHands += 1;
+      if (consumable.id === 'c_stat_discard') newBonusDiscards += 1;
+      if (consumable.id === 'c_life_potion') {
+        newLives = Math.min(prev.lives + 1, prev.maxLives);
+      }
 
       if (consumable.type === 'Planet') {
         planetsUsed++;
@@ -445,6 +508,9 @@ const App: React.FC = () => {
         handLevels: newHandLevels,
         planetsUsed,
         consumables: newConsumables,
+        bonusHands: newBonusHands,
+        bonusDiscards: newBonusDiscards,
+        lives: newLives,
         consumablesUsed: prev.consumablesUsed + 1
       };
     });
@@ -487,12 +553,9 @@ const App: React.FC = () => {
     const initialHand = SORT_CARDS_BY_RANK(fullDeck.slice(0, HAND_SIZE));
 
     // Set Bonus Check
-    const allSlotsFilled = Object.values(state.equipment).every(v => v !== null);
-    let handsBonus = 4;
-    let discardsBonus = 3;
-    if (allSlotsFilled) {
-      if (Math.random() > 0.5) handsBonus++; else discardsBonus++;
-    }
+    const setBonuses = CALCULATE_SET_BONUS(state.equipment);
+    let handsBonus = 4 + state.bonusHands + setBonuses.bonusHands;
+    let discardsBonus = 3 + state.bonusDiscards + setBonuses.bonusDiscards;
 
     const nextState = {
       year: nextYear,

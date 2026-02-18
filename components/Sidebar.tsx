@@ -3,9 +3,13 @@ import { GameState } from '../types';
 
 interface SidebarProps {
   state: GameState;
+  onPlayHand: (selectedIds: Set<string>) => void;
+  onDiscard: (selectedIds: Set<string>) => void;
+  onUseConsumable: (consumable: any) => void;
+  onResetGame: () => void;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ state }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ state, onPlayHand, onDiscard, onUseConsumable, onResetGame }) => {
   const progressPercent = state.goal > 0 ? Math.min((state.tao / state.goal) * 100, 100) : 0;
 
   return (
@@ -35,6 +39,24 @@ export const Sidebar: React.FC<SidebarProps> = ({ state }) => {
             <span className="text-lg font-bold text-zinc-400 tabular-nums">
               {state.goal.toLocaleString()}
             </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Lives Display */}
+      <div className="mb-8 p-3 bg-red-500/5 rounded-lg border border-red-500/10">
+        <div className="flex justify-between items-center">
+          <div className="flex items-center gap-2">
+            <span className="material-symbols-outlined text-red-500 text-sm">favorite</span>
+            <span className="text-[10px] uppercase font-bold text-red-500/80 tracking-widest">True Yuan (真元)</span>
+          </div>
+          <div className="flex gap-1">
+            {Array.from({ length: state.maxLives }).map((_, i) => (
+              <div
+                key={i}
+                className={`w-2 h-2 rounded-full ${i < state.lives ? 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]' : 'bg-zinc-800'}`}
+              />
+            ))}
           </div>
         </div>
       </div>
@@ -88,6 +110,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ state }) => {
           </div>
           <span className="text-3xl font-black text-yellow-500 tabular-nums">{state.spiritStones}</span>
         </div>
+
+        <button
+          onClick={onResetGame}
+          className="w-full py-3 mt-4 text-[10px] uppercase font-bold tracking-[0.2em] text-zinc-500 border border-zinc-800 rounded hover:bg-red-500/10 hover:text-red-500 hover:border-red-500/50 transition-all duration-300"
+        >
+          New Game (重开)
+        </button>
       </div>
     </aside>
   );
