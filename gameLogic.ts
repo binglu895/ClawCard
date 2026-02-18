@@ -159,61 +159,83 @@ export const GET_REALM_MULTIPLIER = (year: number): number => {
     return 500;                    // Demigod (化神) - Massive jump for endgame
 };
 
-export const GENERATE_SHOP_ITEMS = (ante: number, equipment: Record<string, Joker | null>, year: number): { jokers: Joker[], consumables: Consumable[] } => {
-    const jokers: Joker[] = [];
-    const equipped = Object.values(equipment).filter(j => j !== null) as Joker[];
+export const GET_CURRENT_TIER = (year: number): number => {
+    if (year < 20) return 1;
+    if (year < 40) return 2;
+    if (year < 60) return 3;
+    if (year < 80) return 4;
+    return 5;
+};
 
-    // Identify dominant set
-    const setCounts: Record<string, number> = {};
-    equipped.forEach(j => {
-        const setID = j.id.split('_')[1]; // e.g. 'v' for 'j_v_head'
-        setCounts[setID] = (setCounts[setID] || 0) + 1;
+export const GENERATE_SHOP_ITEMS = (year: number, currentEquipment: Record<string, Joker | null>) => {
+    // 1. Analyze Equipment to find Dominant Tier
+    const items = Object.values(currentEquipment).filter((j): j is Joker => j !== null);
+    const tierCounts = [0, 0, 0, 0, 0, 0];
+    items.forEach(j => {
+        const t = GET_ITEM_TIER(j.id);
+        if (t >= 1 && t <= 5) tierCounts[t]++;
     });
-    const dominantSet = Object.entries(setCounts).sort((a, b) => b[1] - a[1])[0]?.[0];
 
-    for (let i = 0; i < 2; i++) {
-        const roll = Math.random();
-        let selected: Joker | null = null;
-
-        if (roll < 0.3 && equipped.length > 0) {
-            // UPGRADE: Spawn exact copy of an equipped item (if level < 3)
-            const targets = equipped.filter(j => (j.level || 1) < 3);
-            if (targets.length > 0) {
-                const target = targets[Math.floor(Math.random() * targets.length)];
-                // Find original in JOKER_POOL to get clean stats
-                const original = JOKER_POOL.find(j => j.id === target.id);
-                if (original) selected = { ...original };
-            }
-        } else if (roll < 0.5 && dominantSet) {
-            // COMPLETION: Spawn missing item from dominant set
-            const setPrefix = `j_${dominantSet}_`;
-            const missing = JOKER_POOL.filter(j => j.id.startsWith(setPrefix) && !equipped.some(ej => ej.id === j.id));
-            if (missing.length > 0) {
-                selected = { ...missing[Math.floor(Math.random() * missing.length)] };
-            }
-        }
-
-        if (!selected) {
-            // STANDARD: Random from pool
-            const pool = JOKER_POOL.filter(j => !equipped.some(ej => ej.id === j.id));
-            selected = { ...pool[Math.floor(Math.random() * pool.length)] };
-        }
-
-        if (selected) {
-            jokers.push({ ...selected, id: `${selected.id}_shop_${Math.random()}` });
+    // Find Tier with most items. If empty, fallback to Current Year Tier.
+    let dominantTier = 0;
+    let maxCount = -1;
+    for (let i = 1; i <= 5; i++) {
+        if (tierCounts[i] > maxCount) {
+            maxCount = tierCounts[i];
+            dominantTier = i;
         }
     }
+    if (maxCount <= 0) dominantTier = GET_CURRENT_TIER(year);
 
-    const consumables: Consumable[] = [];
+    // 2. Prepare Pools
+    // Pool A: Target Set Items (Dominant Tier)
+    const setPool = JOKER_POOL.filter(j => GET_ITEM_TIER(j.id) === dominantTier);
+
+    // Pool B: General Items (Current Tier +/- 1)
+    const currentStageTier = GET_CURRENT_TIER(year);
+    const generalPool = JOKER_POOL.filter(j => Math.abs(GET_ITEM_TIER(j.id) - currentStageTier) <= 1);
+
+    // 3. Select 5 Unique Artifacts
+    const selectedJokers: Joker[] = [];
+    const selectedIds = new Set<string>();
+
+    // Helper to add random unique item from a specific list
+    const addUnique = (sourceList: Joker[]) => {
+        // Filter out items already selected in this shop batch (based on base ID without shop suffix/prefix)
+        const available = sourceList.filter(j => !selectedIds.has(j.id));
+        if (available.length === 0) return;
+
+        const pick = available[Math.floor(Math.random() * available.length)];
+        // Create a unique instance ID for the shop
+        selectedJokers.push({ ...pick, id: `shop_${Math.random().toString(36).substr(2, 5)}_${pick.id}` });
+        selectedIds.add(pick.id); // Track base ID to prevent dupes on shelf
+    };
+
+    // Step 3a: Force 3 items from Set Pool
+    for (let i = 0; i < 3; i++) addUnique(setPool);
+
+    // Step 3b: Fill remaining (up to 5 total) from General Pool
+    while (selectedJokers.length < 5) {
+        const prevLength = selectedJokers.length;
+        addUnique(generalPool);
+        // If we couldn't add anymore from general pool, try the whole JOKER_POOL
+        if (selectedJokers.length === prevLength) {
+            addUnique(JOKER_POOL);
+        }
+        // Safety break if pools are exhausted
+        if (selectedJokers.length === prevLength) break;
+    }
+
+    // 4. Select 3 Consumables
+    const consumables = [];
     const cPool = [...CONSUMABLE_POOL];
-    for (let i = 0; i < 2; i++) {
-        if (cPool.length > 0) {
-            const idx = Math.floor(Math.random() * cPool.length);
-            consumables.push({ ...cPool[idx], id: `shop_c_${Math.random()}` });
-        }
+    for (let i = 0; i < 3; i++) {
+        const idx = Math.floor(Math.random() * cPool.length);
+        const pick = cPool[idx];
+        consumables.push({ ...pick, id: `shop_c_${Math.random()}` });
     }
 
-    return { jokers, consumables };
+    return { jokers: selectedJokers, consumables };
 };
 
 export const JOKER_POOL: Joker[] = [

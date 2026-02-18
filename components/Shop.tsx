@@ -9,9 +9,11 @@ interface ShopProps {
     onBuyJoker: (joker: Joker) => void;
     onBuyConsumable: (consumable: Consumable) => void;
     onSkip: () => void;
+    rerollCost: number;
+    onReroll: () => void;
 }
 
-export const Shop: React.FC<ShopProps> = ({ state, shopItems, onBuyJoker, onBuyConsumable, onSkip }) => {
+export const Shop: React.FC<ShopProps> = ({ state, shopItems, onBuyJoker, onBuyConsumable, onSkip, rerollCost, onReroll }) => {
     return (
         <div className="absolute inset-0 z-40 flex flex-col items-center justify-center bg-background-dark/95 backdrop-blur-2xl animate-in fade-in zoom-in duration-500 p-12 overflow-hidden">
             <div className="w-full max-w-6xl">
@@ -32,6 +34,28 @@ export const Shop: React.FC<ShopProps> = ({ state, shopItems, onBuyJoker, onBuyC
                             ENLIGHTEN (提升修为)
                         </button>
                     </div>
+                </div>
+
+                <div className="flex gap-6 mb-12">
+                    <button
+                        onClick={onReroll}
+                        disabled={state.spiritStones < rerollCost}
+                        className={`
+                            flex flex-col items-center px-10 py-4 rounded-2xl border-2 transition-all active:scale-95
+                            ${state.spiritStones >= rerollCost
+                                ? 'border-primary bg-primary/10 text-primary hover:bg-primary hover:text-white cursor-pointer shadow-[0_0_20px_rgba(37,140,244,0.2)]'
+                                : 'border-zinc-800 bg-zinc-900 text-zinc-600 cursor-not-allowed opacity-50'}
+                        `}
+                    >
+                        <div className="flex items-center gap-2 mb-1">
+                            <span className="material-symbols-outlined text-lg">refresh</span>
+                            <span className="text-lg font-black uppercase tracking-wider">Refresh (刷新)</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                            <span className="material-symbols-outlined text-sm">diamond</span>
+                            <span className="text-sm font-bold">{rerollCost}</span>
+                        </div>
+                    </button>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-12">

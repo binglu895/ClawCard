@@ -102,7 +102,8 @@ const App: React.FC = () => {
 
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isRoundOver, setIsRoundOver] = useState<'victory' | 'defeat' | null>(null);
-  const [shopItems, setShopItems] = useState(() => GENERATE_SHOP_ITEMS(1, {}, 0));
+  const [shopItems, setShopItems] = useState(() => GENERATE_SHOP_ITEMS(0, {}));
+  const [rerollCost, setRerollCost] = useState(5);
 
   // Auto-save on state change
   useEffect(() => {
@@ -264,7 +265,8 @@ const App: React.FC = () => {
         phase: GamePhase.Shop,
         spiritStones: prev.spiritStones + 5
       }));
-      setShopItems(GENERATE_SHOP_ITEMS(state.ante, state.equipment, state.year));
+      setShopItems(GENERATE_SHOP_ITEMS(state.year, state.equipment));
+      setRerollCost(5); // Reset reroll price for new shop
     } else {
       if (state.lives > 1) {
         // Retry Mechanic
@@ -299,7 +301,22 @@ const App: React.FC = () => {
       setState(createInitialState());
       setSelectedIds(new Set());
       setIsRoundOver(null);
-      setShopItems(GENERATE_SHOP_ITEMS(1, {}, 0));
+      setShopItems(GENERATE_SHOP_ITEMS(0, {}));
+      setRerollCost(5);
+    }
+  };
+
+  const handleReroll = () => {
+    if (state.spiritStones >= rerollCost) {
+      audio.playCardSelect();
+
+      setState(prev => ({
+        ...prev,
+        spiritStones: prev.spiritStones - rerollCost
+      }));
+
+      setShopItems(GENERATE_SHOP_ITEMS(state.year, state.equipment));
+      setRerollCost(prev => prev + 1);
     }
   };
 
