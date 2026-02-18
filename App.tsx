@@ -2,7 +2,7 @@ import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { Card } from './components/Card';
 import { Shop } from './components/Shop';
-import { Story } from './components/Story';
+import { Story, DIALOGUES } from './components/Story';
 import { EventOverlay } from './components/EventOverlay';
 import { EndingOverlay } from './components/EndingOverlay';
 import { GameState, CardData, PokerHand, Enhancement, Edition, Seal, GamePhase, Joker, Consumable, Choice } from './types';
@@ -25,10 +25,24 @@ const INITIAL_HAND_LEVELS: Record<PokerHand, number> = {
 
 const HAND_SIZE = 8;
 
-const GET_BLIND_NAME = (round: number) => {
-  if (round === 1) return "Minor Tribulation (小雷劫)";
-  if (round === 2) return "Major Tribulation (大雷劫)";
-  return "Heavenly Doom (天劫)";
+const GET_BLIND_NAME = (round: number, year: number) => {
+  if (year <= 25) {
+    if (round === 1) return "Minor Tribulation (小雷劫)";
+    if (round === 2) return "Major Tribulation (大雷劫)";
+    return "Heavenly Doom (天劫)";
+  } else if (year <= 50) {
+    if (round === 1) return "Efficiency Audit (效能审计)";
+    if (round === 2) return "Quota Review (产出评估)";
+    return "Allocation Reset (分配重置)";
+  } else if (year <= 75) {
+    if (round === 1) return "Memory Scan (内存扫描)";
+    if (round === 2) return "Process Isolation (进程隔离)";
+    return "Firewall Protocol (防火墙协议)";
+  } else {
+    if (round === 1) return "Logic Breach (逻辑破袭)";
+    if (round === 2) return "Kernel Corruption (内核损坏)";
+    return "System Shutdown (系统停机)";
+  }
 };
 
 const createInitialState = (): GameState => {
@@ -38,7 +52,7 @@ const createInitialState = (): GameState => {
 
   return {
     phase: GamePhase.Story,
-    currentBlind: GET_BLIND_NAME(1),
+    currentBlind: GET_BLIND_NAME(1, 0),
     tao: 0,
     goal: CALCULATE_GOAL(1, 1),
     chips: 0,
@@ -56,7 +70,7 @@ const createInitialState = (): GameState => {
     },
     consumables: [],
     ante: 1,
-    year: 1,
+    year: 0,
     storyProgress: 0,
     planetsUsed: 0,
     handPlayCounts: {},
@@ -493,8 +507,9 @@ const App: React.FC = () => {
 
     const currentAnte = Math.floor((nextYear - 1) / 3) + 1;
     const currentRound = ((nextYear - 1) % 3) + 1;
-    const enteringStory = (nextYear - 1) % 3 === 0;
-    const enteringEvent = nextYear % 5 === 0 && !enteringStory;
+    const enteringShop = (nextYear - 1) % 3 === 0 && nextYear > 0;
+    const hasStoryDialog = DIALOGUES[nextYear] !== undefined;
+    const enteringEvent = nextYear % 5 === 0 && !enteringShop && !hasStoryDialog;
 
     const fullDeck = GENERATE_DECK();
     const initialHand = SORT_CARDS_BY_RANK(fullDeck.slice(0, HAND_SIZE));
@@ -515,7 +530,7 @@ const App: React.FC = () => {
       tao: 0,
       handsLeft: handsBonus,
       discardsLeft: discardsBonus,
-      currentBlind: GET_BLIND_NAME(currentRound),
+      currentBlind: GET_BLIND_NAME(currentRound, nextYear),
       cards: initialHand,
       deck: fullDeck.slice(HAND_SIZE),
     };
@@ -531,23 +546,19 @@ const App: React.FC = () => {
       setState(prev => ({
         ...prev,
         ...nextState,
-        phase: enteringStory ? GamePhase.Shop : GamePhase.Gameplay,
-        storyProgress: enteringStory ? prev.storyProgress + 1 : prev.storyProgress
+        phase: hasStoryDialog ? GamePhase.Story : (enteringShop ? GamePhase.Shop : GamePhase.Gameplay)
       }));
-
-      if (enteringStory) {
-        setState(prev => ({ ...prev, phase: GamePhase.Story }));
-      }
     }
   };
 
   const handleEventChoice = (choice: Choice) => {
     setState(prev => {
       const effect = choice.effect(prev);
+      const isShopYear = (prev.year - 1) % 3 === 0 && prev.year > 0;
       return {
         ...prev,
         ...effect,
-        phase: GamePhase.Gameplay
+        phase: isShopYear ? GamePhase.Shop : GamePhase.Gameplay
       };
     });
     setCurrentEvent(null);
@@ -555,7 +566,13 @@ const App: React.FC = () => {
   };
 
   const handleCompleteStory = () => {
-    setState(prev => ({ ...prev, phase: GamePhase.Gameplay }));
+    setState(prev => {
+      const isShopYear = (prev.year - 1) % 3 === 0 && prev.year > 0;
+      return {
+        ...prev,
+        phase: isShopYear ? GamePhase.Shop : GamePhase.Gameplay
+      };
+    });
     audio.playPlayHand();
   };
 
