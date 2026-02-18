@@ -112,10 +112,15 @@ export const SORT_CARDS_BY_RANK = (cards: CardData[]): CardData[] => {
 };
 
 export const CALCULATE_GOAL = (ante: number, round: number): number => {
-    // Ante = Math.floor((year - 1) / 3) + 1
+    // Mapping Ante (Year/3) to Base Goals
     let baseGoal = 0;
 
-    if (ante <= 3) baseGoal = 3000;           // Year 1-9
+    // --- 修正部分：细化前 3 个 Ante 的数值 ---
+    if (ante === 1) baseGoal = 375;        // Year 1-3. Round 1 = 375 * 0.8 = 300
+    else if (ante === 2) baseGoal = 1000;  // Year 4-6. Round 1 = 800
+    else if (ante === 3) baseGoal = 3200;  // Year 7-9. Round 1 = 2560
+
+    // --- 后续保持原有逻辑 (Phase 8) ---
     else if (ante <= 6) baseGoal = 25000;     // Year 10-18
     else if (ante <= 10) baseGoal = 150000;   // Year 19-30 (The 150k target)
     else if (ante <= 13) baseGoal = 1500000;  // Year 31-39
@@ -123,17 +128,27 @@ export const CALCULATE_GOAL = (ante: number, round: number): number => {
     else if (ante <= 20) baseGoal = 200000000;// Year 49-60
     else if (ante <= 23) baseGoal = 2500000000; // Year 61-69
     else if (ante <= 26) baseGoal = 50000000000;// Year 70-78
-    else if (ante <= 30) baseGoal = 1800000000000; // Year 79-90 (1.8 Trillion)
+    else if (ante <= 30) baseGoal = 1800000000000; // Year 79-90
     else baseGoal = 10000000000000;            // Year 91-99 (Final Boss)
 
-    const subStage = (ante - 1) % 3;
-    const growth = Math.pow(1.5, subStage);
+    // Smooth Scaling within tiers (Ante 4+)
+    // For Ante 1-3, we manually set bases, so we assume growth is 1 (subStage 0 logic applies or ignored)
+    let growth = 1;
+    if (ante > 3) {
+        const subStage = (ante - 1) % 3; // 0, 1, 2 within a tier
+        growth = Math.pow(1.5, subStage);
+    }
+
+    // Boss Round Modifier (Round 3)
+    // Round 1 (x0.8), Round 2 (x1.2), Boss (x2.0)
     const roundMod = round === 1 ? 0.8 : round === 2 ? 1.2 : 2.0;
 
     let finalGoal = baseGoal * growth * roundMod;
 
+    // Round numbers for UI cleanliness
     if (finalGoal > 1000000000) return Math.floor(finalGoal / 100000000) * 100000000;
-    return Math.floor(finalGoal / 100) * 100;
+    if (finalGoal > 1000) return Math.floor(finalGoal / 100) * 100; // Round to nearest 100
+    return Math.floor(finalGoal / 10) * 10; // Early game round to nearest 10
 };
 
 export const GET_REALM_MULTIPLIER = (year: number): number => {
