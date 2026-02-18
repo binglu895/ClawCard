@@ -13,8 +13,8 @@ export const EVALUATE_HAND = (cards: CardData[]): PokerHand => {
     });
 
     const sortedRanks = [...ranks].sort((a, b) => a - b);
-    const isFlush = Object.keys(suits).length === 1;
-    const isStraight = sortedRanks.every((r, i) => i === 0 || r === sortedRanks[i - 1] + 1);
+    const isFlush = Object.keys(suits).length === 1 && cards.length === 5;
+    const isStraight = cards.length === 5 && sortedRanks.every((r, i) => i === 0 || r === sortedRanks[i - 1] + 1);
     const countValues = Object.values(counts).sort((a, b) => b - a);
 
     if (isStraight && isFlush) return sortedRanks[0] === 10 ? 'Royal Flush' : 'Straight Flush';
