@@ -36,8 +36,8 @@ export const EventOverlay: React.FC<EventOverlayProps> = ({ event, state, onChoi
                                     {String.fromCharCode(65 + idx)}
                                 </div>
                                 <div className="space-y-1">
-                                    <div className="text-white font-bold text-lg group-hover:text-primary transition-colors">{choice.label}</div>
-                                    <div className="text-xs text-zinc-500">{choice.description}</div>
+                                    <div className="text-white font-bold text-lg group-hover:text-primary transition-colors">{choice.text}</div>
+                                    <div className="text-xs text-zinc-500">{choice.effectPreview}</div>
                                 </div>
 
                                 <div className="ml-auto self-center opacity-0 group-hover:opacity-100 transition-opacity">

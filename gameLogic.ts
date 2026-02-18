@@ -263,92 +263,112 @@ export const CONSUMABLE_POOL: Consumable[] = [
 ];
 
 export const EVENT_POOL: GameEvent[] = [
+    // --- Phase 1: 凡尘的故障 (Years 1-25) ---
     {
-        id: 'e_beggar',
-        title: 'The Starving Beggar (饥饿的乞丐)',
-        description: 'You meet an old man on the road, trembling with hunger. (你在路边遇到一个饿得发抖的老人。)',
+        id: 'evt_beggar_glitch',
+        title: 'The Glitched Beggar (乱码乞丐)',
+        description: 'You meet a beggar. Half of his face is pixelated static. He begs for a single Spirit Stone to "fix his texture". (你遇到一个乞丐。他的半张脸是像素化的噪点。他乞求一颗灵石来“修复他的贴图”。)',
+        minYear: 1,
+        maxYear: 25,
         choices: [
-            {
-                label: 'Give Spirit Stones (施舍灵石)',
-                description: '-5 Spirit Stones, +5 Karma (消耗5灵石，增加5善缘)',
-                effect: (s) => ({ spiritStones: s.spiritStones - 5, karma: s.karma + 5 })
-            },
-            {
-                label: 'Give Food (施舍食物)',
-                description: '+2 Karma (增加2善缘)',
-                effect: (s) => ({ karma: s.karma + 2 })
-            },
-            {
-                label: 'Ignore (无视)',
-                description: 'None (无影响)',
-                effect: () => ({})
-            }
+            { text: 'Give 10 Stones (施舍)', effectPreview: 'Karma +, Reputation +', action: 'GOOD' },
+            { text: 'Attack him (攻击)', effectPreview: 'Obsession +, Gold +', action: 'EVIL' },
+            { text: 'Ignore (无视)', effectPreview: 'Nothing', action: 'IGNORE' }
         ]
     },
     {
-        id: 'e_cave',
-        title: 'Ancient Cave (古修洞府)',
-        description: 'You find a hidden entrance to an ancient cave. A dark aura emanates from within. (你发现了一个古老洞府的入口，一股黑气若隐若现。)',
+        id: 'evt_bandit_loop',
+        title: 'Bandit in a Loop (循环的山贼)',
+        description: 'A bandit jumps out, repeating: "Your money or... Your money or... Your money or..." (一个山贼跳出来，不断重复：“留下买路……留下买路……留下买路……”)',
+        minYear: 5,
+        maxYear: 25,
         choices: [
-            {
-                label: 'Enter Boldly (闯入)',
-                description: '+5 Obsession, Random Artifact (增加5执念，随机获得一件法宝)',
-                effect: (s) => {
-                    const jokers = JOKER_POOL.filter(j => j.rarity !== 'Legendary');
-                    const randomJoker = jokers[Math.floor(Math.random() * jokers.length)];
-                    const slots: Array<keyof GameState['equipment']> = ['Head', 'Hand', 'Leg', 'Body', 'Accessory'];
-                    const emptySlot = slots.find(slot => s.equipment[slot] === null);
-                    const newEquipment = { ...s.equipment };
-                    if (emptySlot) {
-                        newEquipment[emptySlot] = { ...randomJoker, id: `e_joker_${Math.random()}` };
-                    }
-                    return { obsession: s.obsession + 5, equipment: newEquipment };
-                }
-            },
-            {
-                label: 'Purify Entrance (净化入口)',
-                description: '+10 Karma, -2 Spirit Stones (增加10善缘，消耗2灵石)',
-                effect: (s) => ({ karma: s.karma + 10, spiritStones: s.spiritStones - 2 })
-            },
-            {
-                label: 'Leave (离开)',
-                description: 'Safety first. (安全第一)',
-                effect: () => ({})
-            }
+            { text: 'Put him out of misery (帮他解脱)', effectPreview: 'Karma +, Tao +', action: 'GOOD' },
+            { text: 'Rob him instead (反抢)', effectPreview: 'Gold ++, Obsession +', action: 'GREED' },
+            { text: 'Walk away (离开)', effectPreview: 'Nothing', action: 'SAFE' }
+        ]
+    },
+
+    // --- Phase 2: 宗门养殖场 (Years 26-50) ---
+    {
+        id: 'evt_sect_pills',
+        title: 'The Human Pills (人丹)',
+        description: 'You discover the Sect\'s "Spirit Pills" are actually compressed souls of failed disciples. (你发现宗门的“灵丹”其实是失败弟子的灵魂压缩而成的。)',
+        minYear: 26,
+        maxYear: 50,
+        choices: [
+            { text: 'Consume for power (吞噬)', effectPreview: 'Tao +++, Obsession ++, Karma --', action: 'RISKY' },
+            { text: 'Burry them (安葬)', effectPreview: 'Karma ++, HP -10', action: 'GOOD' },
+            { text: 'Sell them (贩卖)', effectPreview: 'Gold +++, Reputation -', action: 'EVIL' }
         ]
     },
     {
-        id: 'e_market',
-        title: 'Black Market Fair (地下拍卖会)',
-        description: 'A shadowy figure invites you to a secret auction. (一个蒙面人邀请你参加秘密拍卖会。)',
+        id: 'evt_sister_delete',
+        title: 'Junior Sister\'s Error (师妹的报错)',
+        description: 'Your Junior Sister is fading away. "System says I take up too much RAM," she cries. (小师妹正在消失。“系统说我占用太多内存了，”她哭道。)',
+        minYear: 30,
+        maxYear: 50,
         choices: [
-            {
-                label: 'Participate (参加)',
-                description: '+5 Reputation, -10 Spirit Stones (增加5声望，消耗10灵石)',
-                effect: (s) => ({ reputation: s.reputation + 5, spiritStones: s.spiritStones - 10 })
-            },
-            {
-                label: 'Infiltrate (潜入)',
-                description: '-5 Reputation, +5 Obsession, Random Scroll (减少5声望，增加5执念，随机获得一卷锦囊)',
-                effect: (s) => {
-                    const scrolls = CONSUMABLE_POOL.filter(c => c.type === 'Tarot');
-                    const randomScroll = scrolls[Math.floor(Math.random() * scrolls.length)];
-                    const newConsumables = [...s.consumables];
-                    if (newConsumables.length < 2) {
-                        newConsumables.push({ ...randomScroll, id: `e_scroll_${Math.random()}` });
-                    }
-                    return { reputation: s.reputation - 5, obsession: s.obsession + 5, consumables: newConsumables };
-                }
-            },
-            {
-                label: 'Report to Sect (上报宗门)',
-                description: '+10 Reputation, +2 Karma (增加10声望，增加2善缘)',
-                effect: (s) => ({ reputation: s.reputation + 10, karma: s.karma + 2 })
-            }
+            { text: 'Use Karma to save her (耗尽功德救她)', effectPreview: 'Karma Reset to 0, Artifact +1', action: 'GOOD' },
+            { text: 'Watch her delete (看着她被删除)', effectPreview: 'Obsession +, Hand Size +1', action: 'EVIL' },
+            { text: 'Report bug to Elder (向长老报告Bug)', effectPreview: 'Reputation +, Gold +', action: 'SAFE' }
+        ]
+    },
+
+    // --- Phase 3: 代码觉醒 (Years 51-75) ---
+    {
+        id: 'evt_dev_room',
+        title: 'The Debug Room (调试屋)',
+        description: 'You fall through the floor into a white void. Floating text reads: "TODO: Balance Economy". (你穿模掉进了一片白色虚空。悬浮文字写着：“待办：平衡经济系统”。)',
+        minYear: 51,
+        maxYear: 75,
+        choices: [
+            { text: 'Hack the Database (黑入数据库)', effectPreview: 'Gold +50, Obsession ++', action: 'GREED' },
+            { text: 'Report as Tester (作为测试员上报)', effectPreview: 'Reputation ++, Tao +', action: 'SAFE' },
+            { text: 'Destroy the Console (摧毁控制台)', effectPreview: 'Lose all Gold, Gain Legendary Artifact', action: 'RISKY' }
+        ]
+    },
+    {
+        id: 'evt_old_player',
+        title: 'The Previous Player (上号玩家)',
+        description: 'A skeleton holds a phone. The screen displays YOUR current stats. (一具骷髅手里拿着手机。屏幕上显示着“你”当前的属性。)',
+        minYear: 60,
+        maxYear: 80,
+        choices: [
+            { text: 'Loot his gear (舔包)', effectPreview: 'Artifact +, Karma -', action: 'GREED' },
+            { text: 'Bury with respect (致敬)', effectPreview: 'Heal 100%, Karma +', action: 'GOOD' },
+            { text: 'Smash the phone (砸碎手机)', effectPreview: 'Obsession --, Tao +', action: 'SAFE' }
+        ]
+    },
+
+    // --- Phase 4: 对抗管理员 (Years 76-99) ---
+    {
+        id: 'evt_firewall',
+        title: 'The Great Firewall (天道防火墙)',
+        description: 'A wall of red code blocks your path. It demands a sacrifice of data. (一道红色的代码墙挡住了去路。它要求献祭数据。)',
+        minYear: 80,
+        maxYear: 98,
+        choices: [
+            { text: 'Delete a Card (删除一张牌)', effectPreview: 'Deck Size -1, Tao ++', action: 'RISKY' },
+            { text: 'Delete Money (献祭灵石)', effectPreview: 'Gold = 0, Karma +', action: 'GOOD' },
+            { text: 'Force Breakthrough (强行突破)', effectPreview: 'HP -50%, Obsession ++', action: 'EVIL' }
+        ]
+    },
+    {
+        id: 'evt_admin_offer',
+        title: 'Admin\'s Offer (管理员的提议)',
+        description: 'A giant eye speaks: "Become a GM? We offer unlimited resources." (一只巨大的眼睛说道：“想成为GM吗？我们提供无限资源。”)',
+        minYear: 90,
+        maxYear: 98,
+        choices: [
+            { text: 'Accept (接受招安)', effectPreview: 'Game Over (Ending: Sect Ancestor)', action: 'SAFE' },
+            { text: 'Refuse (拒绝)', effectPreview: 'Obsession +++, Boss Difficulty UP', action: 'RISKY' },
+            { text: 'Spit on him (唾弃)', effectPreview: 'Karma +++, HP -90%', action: 'GOOD' }
         ]
     }
 ];
 
-export const GET_RANDOM_EVENT = (): GameEvent => {
-    return EVENT_POOL[Math.floor(Math.random() * EVENT_POOL.length)];
+export const GET_RANDOM_EVENT = (year: number): GameEvent => {
+    const validEvents = EVENT_POOL.filter(e => year >= e.minYear && (!e.maxYear || year <= e.maxYear));
+    return validEvents[Math.floor(Math.random() * validEvents.length)] || EVENT_POOL[0];
 };

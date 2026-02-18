@@ -88,14 +88,16 @@ export interface GameState {
 }
 
 export interface Choice {
-  label: string;
-  effect: (state: GameState) => Partial<GameState>;
-  description: string;
+  text: string;
+  effectPreview: string;
+  action: 'GOOD' | 'EVIL' | 'GREED' | 'SAFE' | 'RISKY' | 'IGNORE' | 'risky' | 'good' | 'evil';
 }
 
 export interface GameEvent {
   id: string;
   title: string;
   description: string;
+  minYear: number;
+  maxYear?: number;
   choices: Choice[];
 }

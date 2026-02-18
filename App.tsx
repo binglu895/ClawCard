@@ -6,7 +6,7 @@ import { Story, DIALOGUES } from './components/Story';
 import { EventOverlay } from './components/EventOverlay';
 import { EndingOverlay } from './components/EndingOverlay';
 import { GameState, CardData, PokerHand, Enhancement, Edition, Seal, GamePhase, Joker, Consumable, Choice } from './types';
-import { EVALUATE_HAND, GET_HAND_STATS, CALCULATE_CARD_CHIPS, CALCULATE_CARD_MULT, CALCULATE_CARD_X_MULT, GENERATE_DECK, SORT_CARDS_BY_RANK, CALCULATE_GOAL, GENERATE_SHOP_ITEMS, GET_JOKER_STATS, GET_JOKER_EFFECT_DISPLAY, CONSUMABLE_POOL, GET_RANDOM_EVENT } from './gameLogic';
+import { EVALUATE_HAND, GET_HAND_STATS, CALCULATE_CARD_CHIPS, CALCULATE_CARD_MULT, CALCULATE_CARD_X_MULT, GENERATE_DECK, SORT_CARDS_BY_RANK, CALCULATE_GOAL, GENERATE_SHOP_ITEMS, GET_JOKER_STATS, GET_JOKER_EFFECT_DISPLAY, CONSUMABLE_POOL, JOKER_POOL, GET_RANDOM_EVENT } from './gameLogic';
 import { audio } from './AudioEngine';
 
 const INITIAL_HAND_LEVELS: Record<PokerHand, number> = {
@@ -508,7 +508,7 @@ const App: React.FC = () => {
     };
 
     if (enteringEvent) {
-      setCurrentEvent(GET_RANDOM_EVENT());
+      setCurrentEvent(GET_RANDOM_EVENT(nextYear));
       setState(prev => ({
         ...prev,
         ...nextState,
@@ -525,12 +525,74 @@ const App: React.FC = () => {
 
   const handleEventChoice = (choice: Choice) => {
     setState(prev => {
-      const effect = choice.effect(prev);
+      let newState: Partial<GameState> = {};
+      const action = choice.action.toUpperCase();
+
+      // Generic Action Logic
+      switch (action) {
+        case 'GOOD':
+          newState = {
+            karma: prev.karma + 5,
+            obsession: Math.max(0, prev.obsession - 2),
+            reputation: prev.reputation + 2
+          };
+          break;
+        case 'EVIL':
+          newState = {
+            karma: prev.karma - 10,
+            obsession: prev.obsession + 5,
+            spiritStones: prev.spiritStones + 20
+          };
+          break;
+        case 'GREED':
+          newState = {
+            karma: prev.karma - 5,
+            spiritStones: prev.spiritStones + 15
+          };
+          break;
+        case 'RISKY':
+          if (Math.random() > 0.5) {
+            newState = { tao: prev.tao + 1000, karma: prev.karma + 5 };
+          } else {
+            newState = { tao: Math.max(0, prev.tao - 500), obsession: prev.obsession + 10 };
+          }
+          break;
+        case 'SAFE':
+          newState = { reputation: Math.max(0, prev.reputation - 1) };
+          break;
+        case 'IGNORE':
+          break;
+      }
+
+      // Special Case Logic for Specific Events
+      if (currentEvent) {
+        if (currentEvent.id === 'evt_sister_delete' && action === 'GOOD') {
+          newState = { ...newState, karma: 0 };
+          const slots: Array<keyof GameState['equipment']> = ['Head', 'Hand', 'Leg', 'Body', 'Accessory'];
+          const emptySlot = slots.find(s => prev.equipment[s] === null);
+          if (emptySlot) {
+            const randomJoker = JOKER_POOL.filter(j => j.rarity !== 'Legendary')[Math.floor(Math.random() * 10)];
+            newState = { ...newState, equipment: { ...prev.equipment, [emptySlot]: { ...randomJoker, id: `e_joker_${Math.random()}` } } };
+          }
+        }
+        if (currentEvent.id === 'evt_firewall' && action === 'RISKY') {
+          newState = { ...newState, deck: prev.deck.slice(1), tao: prev.tao + 2000 };
+        }
+        if (currentEvent.id === 'evt_admin_offer' && action === 'SAFE') {
+          setEndingInfo({
+            title: 'Sect Ancestor (宗门老祖)',
+            text: 'You accepted the digital shackles and became a part of the system.',
+            isTrue: false
+          });
+          newState = { ...newState, phase: GamePhase.Ending };
+        }
+      }
+
       const isShopYear = (prev.year - 1) % 3 === 0 && prev.year > 0;
       return {
         ...prev,
-        ...effect,
-        phase: isShopYear ? GamePhase.Shop : GamePhase.Gameplay
+        ...newState,
+        phase: newState.phase || (isShopYear ? GamePhase.Shop : GamePhase.Gameplay)
       };
     });
     setCurrentEvent(null);
