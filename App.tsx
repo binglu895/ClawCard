@@ -329,12 +329,17 @@ const App: React.FC = () => {
       setState(prev => {
         const newEquipment = { ...prev.equipment };
 
-        // Merge logic: Same ID (or name) and same level
-        if (existing && existing.id === artifact.id && existing.level === artifact.level) {
+        // Merge logic: Same base ID and same level
+        // Use endsWith to ignore random shop prefixes (e.g. shop_abc_j_v_head -> j_v_head)
+        const isMatch = existing && artifact.id.endsWith(existing.id) && existing.level === artifact.level;
+
+        if (isMatch) {
           newEquipment[artifact.slot] = { ...existing, level: existing.level + 1 };
         } else {
           // Override logic: Replace existing or equip new
-          newEquipment[artifact.slot] = { ...artifact, level: 1 };
+          // When equipping new, we strip the shop prefix to keep the ID clean in equipment state
+          const baseId = artifact.id.split('_').slice(2).join('_') || artifact.id;
+          newEquipment[artifact.slot] = { ...artifact, id: baseId, level: 1 };
         }
 
         return {
@@ -704,6 +709,8 @@ const App: React.FC = () => {
             onBuyJoker={handleBuyJoker}
             onBuyConsumable={handleBuyConsumable}
             onSkip={handleStartNextGameplay}
+            rerollCost={rerollCost}
+            onReroll={handleReroll}
           />
         )}
 
