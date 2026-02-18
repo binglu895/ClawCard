@@ -54,7 +54,9 @@ export interface Consumable {
 export enum GamePhase {
   Gameplay = 'GAMEPLAY',
   Shop = 'SHOP',
-  Story = 'STORY'
+  Story = 'STORY',
+  Event = 'EVENT',
+  Ending = 'ENDING'
 }
 
 export interface GameState {
@@ -79,4 +81,20 @@ export interface GameState {
   storyProgress: number;
   planetsUsed: number;
   handPlayCounts: Record<string, number>;
+  karma: number;      // Phase 3: Good/Evil
+  obsession: number;  // Phase 3: Madness
+  reputation: number; // Phase 3: Fame
+}
+
+export interface Choice {
+  label: string;
+  effect: (state: GameState) => Partial<GameState>;
+  description: string;
+}
+
+export interface GameEvent {
+  id: string;
+  title: string;
+  description: string;
+  choices: Choice[];
 }

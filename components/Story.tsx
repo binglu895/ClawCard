@@ -10,50 +10,41 @@ const DIALOGUES: Record<number, string[]> = {
     0: [
         "Welcome to the Path of Immortality. (欢迎踏上寻仙之路。)",
         "Here, your Tao is not just a score. It is your essence. (在这里，你的道行不仅是分数。它是你的本原。)",
-        "Overcome the tribulations of each year, or be consumed by the chaos. (渡过每年的劫难，否则你将被混沌吞噬。)",
-        "Equip Artifacts to your five vital centers. They are your shield and sword. (将法宝装备于你的五大要穴。它们是你的盾与剑。)"
+        "Reach Year 99 and ascend to the heavens. (修行至第 99 年，即可飞升上界。)"
     ],
-    1: [
-        "You have survived the initial gathering of Chi. (你已平安渡过聚气期。)",
-        "The heavens are watching your progress. The tribulations will grow heavier. (上天在注视着你的进步。劫难将变得更加沉重。)",
-        "Strengthen your artifacts. The path only gets steeper. (强化你的法宝。前方的路只会更加陡峭。)"
+    // Phase A (1-30): Traditional Cultivation
+    1: ["The first step is always the hardest. (万事开头难。)", "Refine your Qi, steady your mind. (聚气归元，稳固心神。)"],
+    2: ["Foundation established. You are no longer a mere mortal. (筑基已成。你不再是一介凡夫。)", "The world seems simple and bright. (这个世界看起来既单纯又明亮。)"],
+    3: ["Golden Core formed. A major milestone in your path. (金丹结成。你修行路上的重要里程碑。)"],
+
+    // Phase B (31-60): Betrayal & Horror
+    10: [
+        "Something is wrong. You saw a bird disappear mid-flight. (有些不对劲。你看到一只鸟在飞翔中凭空消失了。)",
+        "Just a glitch in your perception... surely. (那一定只是你感知上的一个小故障……大概吧。)"
     ],
-    2: [
-        "Foundation established. You are no longer a mere mortal. (筑基已成。你不再是一介凡夫。)",
-        "The Spirit Stones you gather will fuel your ascension. (你收集的灵石将助你升仙。)",
-        "Do not let the neon lights of the old world blind your inner eye. (莫让旧世界的霓虹灯火迷了你的心智。)"
+    15: [
+        "The villagers... they repeat the exact same motions every day. (那些村民……他们每天都在重复完全相同的动作。)",
+        "Are they even alive? Or are they just... objects? (他们真的活着吗？还是说他们只是……物件？)"
     ],
-    3: [
-        "Golden Core formed. A beacon of light in the data void. (金丹结成。数据虚空中的一盏明灯。)",
-        "The Grand Arbitrator is mobilizing the system firewall. (大仲裁官正在动员系统防火墙。)",
-        "Equip yourself with Rare Artifacts to pierce through the corruption. (装备稀有法宝，刺破腐朽。)"
+    20: [
+        "SYSTEM_NOTICE: Harvesting efficiency at 92%. (系统提示：收割效率 92%。)",
+        "You heard a voice in your head. It didn't sound like a god. (你脑海中响起了一个声音。听起来不像是神迹。)"
     ],
-    4: [
-        "Nascent Soul emerged. You are one with the flow. (元婴显现。你与道合一。)",
-        "Can you feel the 99 years of destiny pulling you forward? (你能感觉到 99 年的宿命在拉你前行吗？)",
-        "The higher you climb, the harder the fall. Balance is key. (爬得越高，摔得越重。平衡是关键。)"
+
+    // Phase C (61-90): The Truth
+    25: [
+        "The 'Heavens' are just a massive array of silicon and light. (所谓的‘上界’，不过是硅片与光芒构成的宏大阵法。)",
+        "We are being raised like cattle. Ascension is the slaughterhouse. (我们像牲口一样被圈养。‘飞升’即是屠宰场。)"
     ],
-    5: [
-        "Ante 5. The system is screaming. Financial markets are in chaos. (Ante 5。系统在痛苦尖叫。金融市场陷入一片混乱。)",
-        "You're not just a gambler anymore. You're a systemic risk. (你不再只是个赌徒。你是系统性风险。)",
-        "One wrong discard, and the firewall will crush your consciousness. (一次错误的弃牌，防火墙就会粉碎你的意识。)"
+    30: [
+        "The fabric of reality is tearing. You can see the code underlying the mountains. (现实的织锦正在撕裂。你能看见山川之下的代码。)",
+        "Everything is a lie. Breaking the Matrix is the only way out. (一切都是谎言。打破矩阵是唯一的出路。)"
     ],
-    6: [
-        "The penultimate layer. The air smells like ozone and scorched silicon. (倒数第二层。空气中弥漫着臭氧和烧焦的硅片味。)",
-        "Everything you've built comes down to this. Your deck is your only weapon. (你建立的一切都归结于此。你的卡组是你唯一的武器。)",
-        "The Grand Arbitrator is preparing for your arrival. (大仲裁官正在为你的到来做准备。)"
-    ],
-    7: [
-        "You've reached the threshold. (你已经到达了门槛。)",
-        "Did you ever wonder why I'm helping you, Glitcher? (你有没有想过我为什么要帮你，漏洞者？)",
-        "I was the first to try. Now, I'm just the one who deals the cards. (我是第一个尝试的人。现在，我只是那个发牌的人。)",
-        "Go. Finish what I couldn't. (去吧。完成我没能完成的事。)"
-    ],
-    8: [
-        "The Grand Arbitrator awaits. The financial heart is exposed. (大仲裁官就在前方。金融心脏已经暴露。)",
-        "One final overload. One final hand. (最后一次过载。最后一手牌。)",
-        "For a world without these neon chains. (为了一个没有这些霓虹枷锁的世界。)",
-        "LET'S END THIS. (让我们结束这一切。)"
+
+    // Phase D (91-99)
+    32: [
+        "The Heavenly Code has detected your awakening. (上苍代码已察觉到你的觉醒。)",
+        "Year 99 is a cage. Fight your way to the exit. (第 99 年是一个囚笼。杀向出口。)"
     ]
 };
 

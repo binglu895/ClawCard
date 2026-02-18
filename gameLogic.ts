@@ -1,4 +1,4 @@
-import { CardData, PokerHand, Enhancement, Edition, Seal, Suit, Joker, Consumable } from './types';
+import { CardData, PokerHand, Enhancement, Edition, Seal, Suit, Joker, Consumable, GameEvent, Choice, GameState } from './types';
 
 export const EVALUATE_HAND = (cards: CardData[]): PokerHand => {
     const counts: Record<string, number> = {};
@@ -260,4 +260,95 @@ export const GENERATE_SHOP_ITEMS = (): { jokers: Joker[], consumables: Consumabl
         jokers: shuffledJokers.slice(0, 2),
         consumables: shuffledConsumables.slice(0, 2)
     };
+};
+
+export const EVENT_POOL: GameEvent[] = [
+    {
+        id: 'e_beggar',
+        title: 'The Starving Beggar (饥饿的乞丐)',
+        description: 'You meet an old man on the road, trembling with hunger. (你在路边遇到一个饿得发抖的老人。)',
+        choices: [
+            {
+                label: 'Give Spirit Stones (施舍灵石)',
+                description: '-5 Spirit Stones, +5 Karma (消耗5灵石，增加5善缘)',
+                effect: (s) => ({ spiritStones: s.spiritStones - 5, karma: s.karma + 5 })
+            },
+            {
+                label: 'Rob Him (抢劫他)',
+                description: '+10 Spirit Stones, -5 Karma, +2 Obsession (增加10灵石，减少5善缘，增加2执念)',
+                effect: (s) => ({ spiritStones: s.spiritStones + 10, karma: s.karma - 5, obsession: s.obsession + 2 })
+            },
+            {
+                label: 'Ignore (无视)',
+                description: 'Nothing happens. (什么也没发生)',
+                effect: () => ({})
+            }
+        ]
+    },
+    {
+        id: 'e_cave',
+        title: 'Ancient Cave (古修洞府)',
+        description: 'You find a hidden entrance to an ancient cave. A dark aura emanates from within. (你发现了一个古老洞府的入口，一股黑气若隐若现。)',
+        choices: [
+            {
+                label: 'Enter Boldly (闯入)',
+                description: '+5 Obsession, Random Artifact (增加5执念，随机获得一件法宝)',
+                effect: (s) => {
+                    const jokers = JOKER_POOL.filter(j => j.rarity !== 'Legendary');
+                    const randomJoker = jokers[Math.floor(Math.random() * jokers.length)];
+                    const slots: Array<keyof GameState['equipment']> = ['Head', 'Hand', 'Leg', 'Body', 'Accessory'];
+                    const emptySlot = slots.find(slot => s.equipment[slot] === null);
+                    const newEquipment = { ...s.equipment };
+                    if (emptySlot) {
+                        newEquipment[emptySlot] = { ...randomJoker, id: `e_joker_${Math.random()}` };
+                    }
+                    return { obsession: s.obsession + 5, equipment: newEquipment };
+                }
+            },
+            {
+                label: 'Purify Entrance (净化入口)',
+                description: '+10 Karma, -2 Spirit Stones (增加10善缘，消耗2灵石)',
+                effect: (s) => ({ karma: s.karma + 10, spiritStones: s.spiritStones - 2 })
+            },
+            {
+                label: 'Leave (离开)',
+                description: 'Safety first. (安全第一)',
+                effect: () => ({})
+            }
+        ]
+    },
+    {
+        id: 'e_market',
+        title: 'Black Market Fair (地下拍卖会)',
+        description: 'A shadowy figure invites you to a secret auction. (一个蒙面人邀请你参加秘密拍卖会。)',
+        choices: [
+            {
+                label: 'Participate (参加)',
+                description: '+5 Reputation, -10 Spirit Stones (增加5声望，消耗10灵石)',
+                effect: (s) => ({ reputation: s.reputation + 5, spiritStones: s.spiritStones - 10 })
+            },
+            {
+                label: 'Infiltrate (潜入)',
+                description: '-5 Reputation, +5 Obsession, Random Scroll (减少5声望，增加5执念，随机获得一卷锦囊)',
+                effect: (s) => {
+                    const scrolls = CONSUMABLE_POOL.filter(c => c.type === 'Tarot');
+                    const randomScroll = scrolls[Math.floor(Math.random() * scrolls.length)];
+                    const newConsumables = [...s.consumables];
+                    if (newConsumables.length < 2) {
+                        newConsumables.push({ ...randomScroll, id: `e_scroll_${Math.random()}` });
+                    }
+                    return { reputation: s.reputation - 5, obsession: s.obsession + 5, consumables: newConsumables };
+                }
+            },
+            {
+                label: 'Report to Sect (上报宗门)',
+                description: '+10 Reputation, +2 Karma (增加10声望，增加2善缘)',
+                effect: (s) => ({ reputation: s.reputation + 10, karma: s.karma + 2 })
+            }
+        ]
+    }
+];
+
+export const GET_RANDOM_EVENT = (): GameEvent => {
+    return EVENT_POOL[Math.floor(Math.random() * EVENT_POOL.length)];
 };

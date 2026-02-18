@@ -3,8 +3,10 @@ import { Sidebar } from './components/Sidebar';
 import { Card } from './components/Card';
 import { Shop } from './components/Shop';
 import { Story } from './components/Story';
-import { GameState, CardData, PokerHand, Enhancement, Edition, Seal, GamePhase, Joker, Consumable } from './types';
-import { EVALUATE_HAND, GET_HAND_STATS, CALCULATE_CARD_CHIPS, CALCULATE_CARD_MULT, CALCULATE_CARD_X_MULT, GENERATE_DECK, SORT_CARDS_BY_RANK, CALCULATE_GOAL, GENERATE_SHOP_ITEMS, GET_JOKER_STATS, GET_JOKER_EFFECT_DISPLAY, CONSUMABLE_POOL } from './gameLogic';
+import { EventOverlay } from './components/EventOverlay';
+import { EndingOverlay } from './components/EndingOverlay';
+import { GameState, CardData, PokerHand, Enhancement, Edition, Seal, GamePhase, Joker, Consumable, Choice } from './types';
+import { EVALUATE_HAND, GET_HAND_STATS, CALCULATE_CARD_CHIPS, CALCULATE_CARD_MULT, CALCULATE_CARD_X_MULT, GENERATE_DECK, SORT_CARDS_BY_RANK, CALCULATE_GOAL, GENERATE_SHOP_ITEMS, GET_JOKER_STATS, GET_JOKER_EFFECT_DISPLAY, CONSUMABLE_POOL, GET_RANDOM_EVENT } from './gameLogic';
 import { audio } from './AudioEngine';
 
 const INITIAL_HAND_LEVELS: Record<PokerHand, number> = {
@@ -57,7 +59,10 @@ const createInitialState = (): GameState => {
     year: 1,
     storyProgress: 0,
     planetsUsed: 0,
-    handPlayCounts: {}
+    handPlayCounts: {},
+    karma: 0,
+    obsession: 0,
+    reputation: 0
   };
 };
 
@@ -66,6 +71,8 @@ const App: React.FC = () => {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isRoundOver, setIsRoundOver] = useState<'victory' | 'defeat' | null>(null);
   const [shopItems, setShopItems] = useState(() => GENERATE_SHOP_ITEMS());
+  const [currentEvent, setCurrentEvent] = useState<any>(null); // To be typed
+  const [endingInfo, setEndingInfo] = useState<{ title: string; text: string; isTrue: boolean } | null>(null);
 
   const selectedCards = useMemo(() =>
     state.cards.filter(c => selectedIds.has(c.id)),
@@ -462,14 +469,32 @@ const App: React.FC = () => {
     const nextYear = state.year + 1;
 
     if (nextYear > 99) {
-      // End game or something? For now just reset
-      setState(createInitialState());
+      // Calculate Ending
+      let title = "The Cycle Ends";
+      let text = "You have reached the end of the path. But is this truly ascension?";
+      let isTrue = false;
+
+      if (state.tao >= state.goal && state.year >= 99) {
+        title = "Ascension? (升仙?)";
+        text = "You break through the final layer of the Heavenly Code. For a moment, you see the characters that form your soul. [Error: Subject Escaped]";
+        isTrue = true;
+      } else if (state.obsession > 50) {
+        title = "Devil's Path (魔道)";
+        text = "Your obsession has consumed you. You are no longer yourself, but a glitch in the matrix's shadow.";
+      } else if (state.karma > 30 && state.reputation < 10) {
+        title = "The Hermit (隐士)";
+        text = "You fade away into the mountains, forgotten by the world you tried to save with your kindness.";
+      }
+
+      setEndingInfo({ title, text, isTrue });
+      setState(prev => ({ ...prev, phase: GamePhase.Ending }));
       return;
     }
 
     const currentAnte = Math.floor((nextYear - 1) / 3) + 1;
     const currentRound = ((nextYear - 1) % 3) + 1;
     const enteringStory = (nextYear - 1) % 3 === 0;
+    const enteringEvent = nextYear % 5 === 0 && !enteringStory;
 
     const fullDeck = GENERATE_DECK();
     const initialHand = SORT_CARDS_BY_RANK(fullDeck.slice(0, HAND_SIZE));
@@ -495,17 +520,38 @@ const App: React.FC = () => {
       deck: fullDeck.slice(HAND_SIZE),
     };
 
-    setState(prev => ({
-      ...prev,
-      ...nextState,
-      phase: enteringStory ? GamePhase.Shop : GamePhase.Gameplay, // Go to shop, then story if needed
-      storyProgress: enteringStory ? prev.storyProgress + 1 : prev.storyProgress
-    }));
+    if (enteringEvent) {
+      setCurrentEvent(GET_RANDOM_EVENT());
+      setState(prev => ({
+        ...prev,
+        ...nextState,
+        phase: GamePhase.Event
+      }));
+    } else {
+      setState(prev => ({
+        ...prev,
+        ...nextState,
+        phase: enteringStory ? GamePhase.Shop : GamePhase.Gameplay,
+        storyProgress: enteringStory ? prev.storyProgress + 1 : prev.storyProgress
+      }));
 
-    // Trigger story if entering new Ante
-    if (enteringStory) {
-      setState(prev => ({ ...prev, phase: GamePhase.Story }));
+      if (enteringStory) {
+        setState(prev => ({ ...prev, phase: GamePhase.Story }));
+      }
     }
+  };
+
+  const handleEventChoice = (choice: Choice) => {
+    setState(prev => {
+      const effect = choice.effect(prev);
+      return {
+        ...prev,
+        ...effect,
+        phase: GamePhase.Gameplay
+      };
+    });
+    setCurrentEvent(null);
+    audio.playPlayHand();
   };
 
   const handleCompleteStory = () => {
@@ -532,6 +578,23 @@ const App: React.FC = () => {
 
         {state.phase === GamePhase.Story && (
           <Story state={state} onComplete={handleCompleteStory} />
+        )}
+
+        {state.phase === GamePhase.Event && currentEvent && (
+          <EventOverlay
+            event={currentEvent}
+            state={state}
+            onChoice={handleEventChoice}
+          />
+        )}
+
+        {state.phase === GamePhase.Ending && endingInfo && (
+          <EndingOverlay
+            title={endingInfo.title}
+            text={endingInfo.text}
+            isTrue={endingInfo.isTrue}
+            onRestart={() => setState(createInitialState())}
+          />
         )}
 
         {/* Top Header */}
