@@ -1,4 +1,4 @@
-import { CardData, PokerHand, Enhancement, Edition, Seal, Suit } from './types';
+import { CardData, PokerHand, Enhancement, Edition, Seal, Suit, Joker, Consumable } from './types';
 
 export const EVALUATE_HAND = (cards: CardData[]): PokerHand => {
     const counts: Record<string, number> = {};
@@ -138,4 +138,30 @@ export const CALCULATE_GOAL = (ante: number, round: number): number => {
 
     // Scale exponentially with Ante: Goal = Base * 1.5^(Ante-1)
     return Math.floor(baseGoal * Math.pow(1.5, ante - 1));
+};
+
+export const JOKER_POOL: Joker[] = [
+    { id: 'j_joker', name: 'Joker (小丑)', rarity: 'Common', price: 4, effect: '+4 Mult', description: '提供 +4 倍率。' },
+    { id: 'j_greedy', name: 'Greedy Joker (贪婪小丑)', rarity: 'Common', price: 5, effect: 'Diamonds give +4 Mult', description: '方块牌提供 +4 倍率。' },
+    { id: 'j_lusty', name: 'Lusty Joker (好色小丑)', rarity: 'Common', price: 5, effect: 'Hearts give +4 Mult', description: '红桃牌提供 +4 倍率。' },
+    { id: 'j_wrathful', name: 'Wrathful Joker (愤怒小丑)', rarity: 'Common', price: 5, effect: 'Spades give +4 Mult', description: '黑桃牌提供 +4 倍率。' },
+    { id: 'j_gluttonous', name: 'Gluttonous Joker (贪食小丑)', rarity: 'Common', price: 5, effect: 'Clubs give +4 Mult', description: '梅花牌提供 +4 倍率。' },
+    { id: 'j_blue_joker', name: 'Blue Joker (蓝色小丑)', rarity: 'Uncommon', price: 6, effect: '+2 Chips for each card in deck', description: '牌组中每张牌提供 +2 筹码。' },
+];
+
+export const CONSUMABLE_POOL: Consumable[] = [
+    { id: 'c_jupiter', name: 'Jupiter (木星)', type: 'Planet', price: 3, effect: 'Level up Flush', description: '提升同花等级。' },
+    { id: 'c_mars', name: 'Mars (火星)', type: 'Planet', price: 3, effect: 'Level up Four of a Kind', description: '提升四条等级。' },
+    { id: 'c_the_fool', name: 'The Fool (愚者)', type: 'Tarot', price: 3, effect: 'Create last Tarot/Planet', description: '创建最后使用的塔罗牌或行星牌。' },
+    { id: 'c_the_magician', name: 'The Magician (魔术师)', type: 'Tarot', price: 3, effect: 'Enhance 2 cards to Lucky', description: '将 2 张牌增强为幸运牌。' },
+];
+
+export const GENERATE_SHOP_ITEMS = (): { jokers: Joker[], consumables: Consumable[] } => {
+    const shuffledJokers = SHUFFLE_ARRAY(JOKER_POOL);
+    const shuffledConsumables = SHUFFLE_ARRAY(CONSUMABLE_POOL);
+
+    return {
+        jokers: shuffledJokers.slice(0, 2),
+        consumables: shuffledConsumables.slice(0, 2)
+    };
 };

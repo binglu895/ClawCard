@@ -1,8 +1,11 @@
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { Card } from './components/Card';
-import { GameState, CardData, PokerHand, Enhancement, Edition, Seal } from './types';
-import { EVALUATE_HAND, GET_HAND_STATS, CALCULATE_CARD_CHIPS, CALCULATE_CARD_MULT, CALCULATE_CARD_X_MULT, GENERATE_DECK, SORT_CARDS_BY_RANK, CALCULATE_GOAL } from './gameLogic';
+import { Shop } from './components/Shop';
+import { Story } from './components/Story';
+import { GameState, CardData, PokerHand, Enhancement, Edition, Seal, GamePhase, Joker, Consumable } from './types';
+import { EVALUATE_HAND, GET_HAND_STATS, CALCULATE_CARD_CHIPS, CALCULATE_CARD_MULT, CALCULATE_CARD_X_MULT, GENERATE_DECK, SORT_CARDS_BY_RANK, CALCULATE_GOAL, GENERATE_SHOP_ITEMS } from './gameLogic';
+import { audio } from './AudioEngine';
 
 const INITIAL_HAND_LEVELS: Record<PokerHand, number> = {
   'High Card': 1,
@@ -32,6 +35,7 @@ const createInitialState = (): GameState => {
   const remainingDeck = fullDeck.slice(HAND_SIZE);
 
   return {
+    phase: GamePhase.Story,
     currentBlind: GET_BLIND_NAME(1),
     score: 0,
     goal: CALCULATE_GOAL(1, 1),
@@ -46,8 +50,11 @@ const createInitialState = (): GameState => {
     cards: initialHand,
     deck: remainingDeck,
     jokers: [],
+    jokersData: [],
+    consumables: [],
     ante: 1,
-    round: 1
+    round: 1,
+    storyProgress: 0
   };
 };
 
@@ -55,6 +62,7 @@ const App: React.FC = () => {
   const [state, setState] = useState<GameState>(createInitialState());
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isRoundOver, setIsRoundOver] = useState<'victory' | 'defeat' | null>(null);
+  const [shopItems, setShopItems] = useState(() => GENERATE_SHOP_ITEMS());
 
   const selectedCards = useMemo(() =>
     state.cards.filter(c => selectedIds.has(c.id)),
@@ -74,6 +82,11 @@ const App: React.FC = () => {
       chips += CALCULATE_CARD_CHIPS(c);
       mult += CALCULATE_CARD_MULT(c);
       xMult *= CALCULATE_CARD_X_MULT(c);
+    });
+
+    // Joker Bonuses
+    state.jokersData.forEach(j => {
+      if (j.id === 'j_joker') mult += 4;
     });
 
     return {
@@ -107,22 +120,30 @@ const App: React.FC = () => {
 
   // Check for Win/Loss
   useEffect(() => {
+    if (state.phase !== GamePhase.Gameplay) return;
     if (state.score >= state.goal && !isRoundOver) {
       setIsRoundOver('victory');
+      audio.playVictory();
     } else if (state.handsLeft === 0 && state.score < state.goal && !isRoundOver) {
       setIsRoundOver('defeat');
+      audio.playDefeat();
     }
-  }, [state.score, state.goal, state.handsLeft, isRoundOver]);
+  }, [state.score, state.goal, state.handsLeft, isRoundOver, state.phase]);
 
   const handleToggleCard = useCallback((id: string) => {
-    if (isRoundOver) return;
+    if (isRoundOver || state.phase !== GamePhase.Gameplay) return;
     setSelectedIds(prev => {
       const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else if (next.size < 5) next.add(id);
+      if (next.has(id)) {
+        audio.playCardDeselect();
+        next.delete(id);
+      } else if (next.size < 5) {
+        audio.playCardSelect();
+        next.add(id);
+      }
       return next;
     });
-  }, [isRoundOver]);
+  }, [isRoundOver, state.phase]);
 
   const handlePlayHand = () => {
     if (!currentHandPreview || state.handsLeft <= 0 || isRoundOver) return;
@@ -144,6 +165,7 @@ const App: React.FC = () => {
 
   const handleDiscard = () => {
     if (selectedIds.size === 0 || state.discardsLeft === 0 || isRoundOver) return;
+    audio.playDiscard();
 
     const newCards = state.cards.filter(c => !selectedIds.has(c.id));
     const cardsNeeded = HAND_SIZE - newCards.length;
@@ -159,20 +181,65 @@ const App: React.FC = () => {
     setSelectedIds(new Set());
   };
 
-  const handleRestart = () => {
+  const handleNextRound = () => {
     if (isRoundOver === 'victory') {
-      let nextRound = state.round + 1;
-      let nextAnte = state.ante;
-      if (nextRound > 3) {
-        nextRound = 1;
-        nextAnte += 1;
-      }
+      audio.playCardSelect();
+      setState(prev => ({ ...prev, phase: GamePhase.Shop }));
+      setShopItems(GENERATE_SHOP_ITEMS());
+    } else {
+      audio.playDefeat();
+      setState(createInitialState());
+    }
+    setIsRoundOver(null);
+    setSelectedIds(new Set());
+  };
 
+  const handleBuyJoker = (joker: Joker) => {
+    if (state.money >= joker.price && state.jokersData.length < 5) {
+      audio.playCardSelect();
+      setState(prev => ({
+        ...prev,
+        money: prev.money - joker.price,
+        jokers: [...prev.jokers, joker.id],
+        jokersData: [...prev.jokersData, joker]
+      }));
+      setShopItems(prev => ({
+        ...prev,
+        jokers: prev.jokers.filter(j => j.id !== joker.id)
+      }));
+    }
+  };
+
+  const handleBuyConsumable = (item: Consumable) => {
+    if (state.money >= item.price && state.consumables.length < 2) {
+      audio.playCardSelect();
+      setState(prev => ({
+        ...prev,
+        money: prev.money - item.price,
+        consumables: [...prev.consumables, item]
+      }));
+      setShopItems(prev => ({
+        ...prev,
+        consumables: prev.consumables.filter(c => c.id !== item.id)
+      }));
+    }
+  };
+
+  const handleStartNextGameplay = () => {
+    audio.playPlayHand();
+    let nextRound = state.round + 1;
+    let nextAnte = state.ante;
+    if (nextRound > 3) {
+      nextRound = 1;
+      nextAnte += 1;
+      setState(prev => ({ ...prev, phase: GamePhase.Story, storyProgress: prev.storyProgress + 1 }));
+    } else {
       const fullDeck = GENERATE_DECK();
       const initialHand = SORT_CARDS_BY_RANK(fullDeck.slice(0, HAND_SIZE));
 
       setState(prev => ({
         ...prev,
+        phase: GamePhase.Gameplay,
         round: nextRound,
         ante: nextAnte,
         goal: CALCULATE_GOAL(nextAnte, nextRound),
@@ -182,14 +249,14 @@ const App: React.FC = () => {
         currentBlind: GET_BLIND_NAME(nextRound),
         cards: initialHand,
         deck: fullDeck.slice(HAND_SIZE),
-        money: prev.money + 5 // Reward for winning
+        money: prev.money + 5
       }));
-    } else {
-      // Defeat -> Full Restart
-      setState(createInitialState());
     }
-    setIsRoundOver(null);
-    setSelectedIds(new Set());
+  };
+
+  const handleCompleteStory = () => {
+    setState(prev => ({ ...prev, phase: GamePhase.Gameplay }));
+    audio.playPlayHand();
   };
 
   return (
@@ -199,6 +266,20 @@ const App: React.FC = () => {
       <Sidebar state={state} />
 
       <main className="flex-1 flex flex-col relative">
+        {state.phase === GamePhase.Shop && (
+          <Shop
+            state={state}
+            shopItems={shopItems}
+            onBuyJoker={handleBuyJoker}
+            onBuyConsumable={handleBuyConsumable}
+            onSkip={handleStartNextGameplay}
+          />
+        )}
+
+        {state.phase === GamePhase.Story && (
+          <Story state={state} onComplete={handleCompleteStory} />
+        )}
+
         {/* Top Header */}
         <div className="p-12 pb-0 flex items-center gap-8">
           <div className="flex flex-col">
@@ -214,6 +295,15 @@ const App: React.FC = () => {
           <div className="flex flex-col">
             <span className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest italic">Level (等级)</span>
             <span className="text-xl font-medium tracking-tight text-white">Lv. {currentHandPreview?.level || 1}</span>
+          </div>
+
+          <div className="ml-auto flex gap-4">
+            {state.jokersData.map((j, i) => (
+              <div key={i} className="px-4 py-2 bg-zinc-900 border border-primary/30 rounded-lg flex flex-col items-center">
+                <span className="text-[8px] font-black text-primary uppercase">{j.rarity}</span>
+                <span className="text-xs font-bold text-white">{j.name}</span>
+              </div>
+            ))}
           </div>
         </div>
 
@@ -237,10 +327,10 @@ const App: React.FC = () => {
                   </div>
                 </div>
                 <button
-                  onClick={handleRestart}
+                  onClick={handleNextRound}
                   className="px-10 py-4 bg-white text-black font-black text-lg rounded-xl hover:bg-zinc-200 transition-all active:scale-95"
                 >
-                  {isRoundOver === 'victory' ? 'Next Round (下一轮)' : 'Retry (重新开始)'}
+                  {isRoundOver === 'victory' ? 'Go to Shop (前往商店)' : 'Retry (重新开始)'}
                 </button>
               </div>
             </div>
@@ -280,9 +370,9 @@ const App: React.FC = () => {
           <div className="flex gap-4">
             <button
               onClick={handlePlayHand}
-              disabled={selectedIds.size === 0 || state.handsLeft === 0 || isRoundOver !== null}
+              disabled={selectedIds.size === 0 || state.handsLeft === 0 || isRoundOver !== null || state.phase !== GamePhase.Gameplay}
               className={`
-                bg-primary hover:bg-primary/90 text-white font-bold text-sm px-10 py-3.5 rounded-lg
+                bg-primary hover:bg-primary/90 text-white font-bold text-sm px-10 py-3.5 rounded-lg 
                 flex items-center gap-2 transition-all active:scale-95 disabled:opacity-50 disabled:grayscale
               `}
             >
@@ -291,9 +381,9 @@ const App: React.FC = () => {
             </button>
             <button
               onClick={handleDiscard}
-              disabled={selectedIds.size === 0 || state.discardsLeft === 0 || isRoundOver !== null}
+              disabled={selectedIds.size === 0 || state.discardsLeft === 0 || isRoundOver !== null || state.phase !== GamePhase.Gameplay}
               className={`
-                border border-mult-red/40 hover:bg-mult-red/10 text-mult-red font-bold text-sm px-10 py-3.5
+                border border-mult-red/40 hover:bg-mult-red/10 text-mult-red font-bold text-sm px-10 py-3.5 
                 rounded-lg transition-all active:scale-95 disabled:opacity-30
               `}
             >

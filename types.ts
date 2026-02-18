@@ -31,7 +31,32 @@ export interface HandLevelEntry {
   level: number;
 }
 
+export interface Joker {
+  id: string;
+  name: string;
+  rarity: 'Common' | 'Uncommon' | 'Rare' | 'Legendary';
+  effect: string;
+  price: number;
+  description: string;
+}
+
+export interface Consumable {
+  id: string;
+  name: string;
+  type: 'Planet' | 'Tarot';
+  effect: string;
+  price: number;
+  description: string;
+}
+
+export enum GamePhase {
+  Gameplay = 'GAMEPLAY',
+  Shop = 'SHOP',
+  Story = 'STORY'
+}
+
 export interface GameState {
+  phase: GamePhase;
   currentBlind: string;
   score: number;
   goal: number;
@@ -46,6 +71,9 @@ export interface GameState {
   cards: CardData[];
   deck: CardData[];
   jokers: string[]; // Joker IDs
+  jokersData: Joker[]; // Active jokers
+  consumables: Consumable[];
   ante: number;
   round: number;
+  storyProgress: number;
 }
