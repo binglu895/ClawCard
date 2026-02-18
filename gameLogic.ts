@@ -1,0 +1,90 @@
+import { CardData, PokerHand, Enhancement, Edition, Seal } from './types';
+
+export const EVALUATE_HAND = (cards: CardData[]): PokerHand => {
+    const counts: Record<string, number> = {};
+    const suits: Record<string, number> = {};
+    const ranks: number[] = [];
+
+    cards.forEach(card => {
+        counts[card.rank] = (counts[card.rank] || 0) + 1;
+        suits[card.suit] = (suits[card.suit] || 0) + 1;
+        const r = card.rank === 'A' ? 14 : card.rank === 'K' ? 13 : card.rank === 'Q' ? 12 : card.rank === 'J' ? 11 : parseInt(card.rank);
+        ranks.push(r);
+    });
+
+    const sortedRanks = [...ranks].sort((a, b) => a - b);
+    const isFlush = Object.keys(suits).length === 1;
+    const isStraight = sortedRanks.every((r, i) => i === 0 || r === sortedRanks[i - 1] + 1);
+    const countValues = Object.values(counts).sort((a, b) => b - a);
+
+    if (isStraight && isFlush) return sortedRanks[0] === 10 ? 'Royal Flush' : 'Straight Flush';
+    if (countValues[0] === 5) return 'Five of a Kind';
+    if (countValues[0] === 4) return 'Four of a Kind';
+    if (countValues[0] === 3 && countValues[1] === 2) return 'Full House';
+    if (isFlush) return 'Flush';
+    if (isStraight) return 'Straight';
+    if (countValues[0] === 3) return 'Three of a Kind';
+    if (countValues[0] === 2 && countValues[1] === 2) return 'Two Pair';
+    if (countValues[0] === 2) return 'Pair';
+
+    return 'High Card';
+};
+
+export const GET_HAND_STATS = (hand: PokerHand, level: number): [number, number] => {
+    const baseStats: Record<PokerHand, [number, number]> = {
+        'High Card': [5, 1],
+        'Pair': [10, 2],
+        'Two Pair': [20, 2],
+        'Three of a Kind': [30, 3],
+        'Straight': [30, 4],
+        'Flush': [35, 4],
+        'Full House': [40, 4],
+        'Four of a Kind': [60, 7],
+        'Five of a Kind': [120, 12],
+        'Straight Flush': [100, 8],
+        'Royal Flush': [100, 8],
+    };
+
+    const [baseChips, baseMult] = baseStats[hand];
+    const scale: Record<PokerHand, [number, number]> = {
+        'High Card': [10, 1],
+        'Pair': [15, 1],
+        'Two Pair': [20, 1],
+        'Three of a Kind': [20, 2],
+        'Straight': [30, 2],
+        'Flush': [15, 2],
+        'Full House': [25, 2],
+        'Four of a Kind': [30, 3],
+        'Five of a Kind': [35, 3],
+        'Straight Flush': [40, 3],
+        'Royal Flush': [40, 3],
+    };
+
+    const [chipScale, multScale] = scale[hand];
+    return [baseChips + (level - 1) * chipScale, baseMult + (level - 1) * multScale];
+};
+
+export const CALCULATE_CARD_CHIPS = (card: CardData): number => {
+    let chips = 0;
+    const rankVal = card.rank === 'A' ? 11 : (['K', 'Q', 'J', '10'].includes(card.rank) ? 10 : parseInt(card.rank));
+
+    if (card.enhancement === Enhancement.Stone) return 50;
+
+    chips += rankVal;
+    if (card.edition === Edition.Foil) chips += 50;
+
+    return chips;
+};
+
+export const CALCULATE_CARD_MULT = (card: CardData): number => {
+    let mult = 0;
+    if (card.edition === Edition.Holographic) mult += 10;
+    return mult;
+};
+
+export const CALCULATE_CARD_X_MULT = (card: CardData): number => {
+    let xMult = 1;
+    if (card.edition === Edition.Polychrome) xMult *= 1.5;
+    if (card.enhancement === Enhancement.Glass) xMult *= 2;
+    return xMult;
+};
