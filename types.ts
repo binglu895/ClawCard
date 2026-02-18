@@ -80,6 +80,7 @@ export interface GameState {
   year: number;     // Previously round
   storyProgress: number;
   planetsUsed: number;
+  consumablesUsed: number;
   handPlayCounts: Record<string, number>;
   karma: number;      // Phase 3: Good/Evil
   obsession: number;  // Phase 3: Madness

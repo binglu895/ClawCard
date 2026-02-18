@@ -73,6 +73,7 @@ const createInitialState = (): GameState => {
     year: 0,
     storyProgress: 0,
     planetsUsed: 0,
+    consumablesUsed: 0,
     handPlayCounts: {},
     karma: 0,
     obsession: 0,
@@ -84,7 +85,7 @@ const App: React.FC = () => {
   const [state, setState] = useState<GameState>(createInitialState());
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isRoundOver, setIsRoundOver] = useState<'victory' | 'defeat' | null>(null);
-  const [shopItems, setShopItems] = useState(() => GENERATE_SHOP_ITEMS());
+  const [shopItems, setShopItems] = useState(() => GENERATE_SHOP_ITEMS(1));
   const [currentEvent, setCurrentEvent] = useState<any>(null); // To be typed
   const [endingInfo, setEndingInfo] = useState<{ title: string; text: string; isTrue: boolean } | null>(null);
 
@@ -95,67 +96,36 @@ const App: React.FC = () => {
   const currentHandPreview = useMemo(() => {
     if (selectedCards.length === 0) return null;
     const hand = EVALUATE_HAND(selectedCards);
-    const level = state.handLevels[hand];
-    const [baseChips, baseMult] = GET_HAND_STATS(hand, level);
+    const level = state.handLevels[hand] || 1;
+    const { chips: baseChips, mult: baseMult } = GET_HAND_STATS(hand, level);
 
     let chips = baseChips;
     let mult = baseMult;
     let xMult = 1;
 
-    selectedCards.forEach(c => {
+    // Retrigger logic
+    const retriggerAllFace = (Object.values(state.equipment) as (Joker | null)[]).some(j => j?.id === 'j_c_leg');
+    const retriggerFirst = (Object.values(state.equipment) as (Joker | null)[]).some(j => j?.id === 'j_b_leg');
+
+    const scoreCard = (c: CardData) => {
       chips += CALCULATE_CARD_CHIPS(c);
       mult += CALCULATE_CARD_MULT(c);
       xMult *= CALCULATE_CARD_X_MULT(c);
+    };
+
+    selectedCards.forEach((c, idx) => {
+      scoreCard(c);
+      if (retriggerAllFace && ['J', 'Q', 'K'].includes(c.rank)) scoreCard(c);
+      if (retriggerFirst && idx === 0) scoreCard(c);
     });
 
     // Artifact (Equipment) Bonuses
     (Object.values(state.equipment) as (Joker | null)[]).forEach(j => {
       if (!j) return;
-      const stats = GET_JOKER_STATS(j);
-      const isOdd = (rank: string) => ['A', '3', '5', '7', '9'].includes(rank);
-      const isEven = (rank: string) => ['2', '4', '6', '8', '10', 'Q'].includes(rank); // Simplified
-
-      // Apply base stats
+      const stats = GET_JOKER_STATS(j, state, selectedCards, hand);
       chips += stats.tao;
       mult += stats.mult;
-      xMult *= (j.id === 'j_constellation' ? (1 + stats.xMult * state.planetsUsed) : stats.xMult);
-
-      // Handle specific conditions
-      if (j.id === 'j_greedy') {
-        const diamonds = selectedCards.filter(c => c.suit === 'DIAMONDS').length;
-        mult += stats.mult * diamonds;
-      }
-      if (j.id === 'j_lusty') {
-        const hearts = selectedCards.filter(c => c.suit === 'HEARTS').length;
-        mult += stats.mult * hearts;
-      }
-      if (j.id === 'j_wrathful') {
-        const spades = selectedCards.filter(c => c.suit === 'SPADES').length;
-        mult += stats.mult * spades;
-      }
-      if (j.id === 'j_gluttonous') {
-        const clubs = selectedCards.filter(c => c.suit === 'CLUBS').length;
-        mult += stats.mult * clubs;
-      }
-      if (j.id === 'j_blue_joker') {
-        chips += stats.tao * state.deck.length;
-      }
-      if (j.id === 'j_abstract') {
-        const artifactCount = Object.values(state.equipment).filter(val => val !== null).length;
-        mult += stats.mult * artifactCount;
-      }
-      if (j.id === 'j_odd_todd') {
-        const oddCount = selectedCards.filter(c => isOdd(c.rank)).length;
-        chips += stats.tao * oddCount;
-      }
-      if (j.id === 'j_even_steven') {
-        const evenCount = selectedCards.filter(c => isEven(c.rank)).length;
-        mult += stats.mult * evenCount;
-      }
-      if (j.id === 'j_supernova') {
-        const playCount = state.handPlayCounts[hand] || 0;
-        mult += stats.mult * playCount;
-      }
+      xMult *= stats.xMult;
     });
 
     if ((Object.values(state.equipment) as (Joker | null)[]).some(j => j?.id === 'j_stuntman')) {
@@ -226,17 +196,21 @@ const App: React.FC = () => {
     const drawn = state.deck.slice(0, cardsNeeded);
     const remainingDeck = state.deck.slice(cardsNeeded);
 
-    setState(prev => ({
-      ...prev,
-      tao: prev.tao + currentHandPreview.total,
-      handsLeft: prev.handsLeft - 1,
-      cards: SORT_CARDS_BY_RANK([...newCards, ...drawn]),
-      deck: remainingDeck,
-      handPlayCounts: {
-        ...prev.handPlayCounts,
-        [currentHandPreview.hand]: (prev.handPlayCounts[currentHandPreview.hand] || 0) + 1
-      }
-    }));
+    setState(prev => {
+      const hasBreathRobe = (Object.values(prev.equipment) as (Joker | null)[]).some(j => j?.id === 'j_b_body');
+      return {
+        ...prev,
+        tao: prev.tao + currentHandPreview.total,
+        spiritStones: prev.spiritStones + (hasBreathRobe ? 1 : 0),
+        handsLeft: prev.handsLeft - 1,
+        cards: SORT_CARDS_BY_RANK([...newCards, ...drawn]),
+        deck: remainingDeck,
+        handPlayCounts: {
+          ...prev.handPlayCounts,
+          [currentHandPreview.hand]: (prev.handPlayCounts[currentHandPreview.hand] || 0) + 1
+        }
+      };
+    });
     setSelectedIds(new Set());
   };
 
@@ -266,7 +240,7 @@ const App: React.FC = () => {
         phase: GamePhase.Shop,
         spiritStones: prev.spiritStones + 5 // Reward moved here so it's available in shop
       }));
-      setShopItems(GENERATE_SHOP_ITEMS());
+      setShopItems(GENERATE_SHOP_ITEMS(state.ante));
     } else {
       audio.playDefeat();
       setState(createInitialState());
@@ -470,10 +444,8 @@ const App: React.FC = () => {
         ...prev,
         handLevels: newHandLevels,
         planetsUsed,
-        cards: newCards,
-        spiritStones: newSpiritStones,
-        currentBlind: newCurrentBlind,
-        consumables: newConsumables
+        consumables: newConsumables,
+        consumablesUsed: prev.consumablesUsed + 1
       };
     });
   };
