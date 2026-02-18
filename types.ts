@@ -52,6 +52,7 @@ export interface Consumable {
 }
 
 export enum GamePhase {
+  MainMenu = 'MainMenu',
   Gameplay = 'GAMEPLAY',
   Shop = 'SHOP',
   Story = 'STORY',

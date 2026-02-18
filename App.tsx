@@ -3,6 +3,7 @@ import { Sidebar } from './components/Sidebar';
 import { Card } from './components/Card';
 import { Shop } from './components/Shop';
 import { Story, DIALOGUES } from './components/Story';
+import { MainMenu } from './components/MainMenu';
 import { EventOverlay } from './components/EventOverlay';
 import { EndingOverlay } from './components/EndingOverlay';
 import { GameState, CardData, PokerHand, Enhancement, Edition, Seal, GamePhase, Joker, Consumable, Choice } from './types';
@@ -51,7 +52,7 @@ const createInitialState = (): GameState => {
   const remainingDeck = fullDeck.slice(HAND_SIZE);
 
   return {
-    phase: GamePhase.Story,
+    phase: GamePhase.MainMenu,
     currentBlind: GET_BLIND_NAME(1, 0),
     tao: 0,
     goal: CALCULATE_GOAL(1, 1),
@@ -88,27 +89,20 @@ const createInitialState = (): GameState => {
 const SAVE_KEY = 'xiuxian_save_v1';
 
 const App: React.FC = () => {
-  const [state, setState] = useState<GameState>(() => {
-    const saved = localStorage.getItem(SAVE_KEY);
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch (e) {
-        console.error("Failed to load save:", e);
-      }
+  const [state, setState] = useState<GameState>(() => createInitialState());
+  const [hasSave, setHasSave] = useState(false);
+
+  // Check for save on mount
+  useEffect(() => {
+    if (localStorage.getItem(SAVE_KEY)) {
+      setHasSave(true);
     }
-    return createInitialState();
-  });
+  }, []);
 
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isRoundOver, setIsRoundOver] = useState<'victory' | 'defeat' | null>(null);
   const [shopItems, setShopItems] = useState(() => GENERATE_SHOP_ITEMS(0, {}));
   const [rerollCost, setRerollCost] = useState(5);
-
-  // Auto-save on state change
-  useEffect(() => {
-    localStorage.setItem(SAVE_KEY, JSON.stringify(state));
-  }, [state]);
   const [currentEvent, setCurrentEvent] = useState<any>(null); // To be typed
   const [endingInfo, setEndingInfo] = useState<{ title: string; text: string; isTrue: boolean } | null>(null);
 
@@ -296,6 +290,37 @@ const App: React.FC = () => {
     setSelectedIds(new Set());
   };
 
+  const handleSaveGame = () => {
+    if (state.phase === GamePhase.Gameplay) {
+      alert("Cannot save during combat! (战斗中无法刻录道果)");
+      return;
+    }
+    localStorage.setItem(SAVE_KEY, JSON.stringify(state));
+    setHasSave(true);
+    alert("Progress Saved. (道果已刻录)");
+  };
+
+  const handleLoadGame = () => {
+    const saved = localStorage.getItem(SAVE_KEY);
+    if (saved) {
+      try {
+        const parsedState = JSON.parse(saved);
+        setState(parsedState);
+        audio.playCardSelect();
+      } catch (e) {
+        console.error("Failed to load save:", e);
+        alert("Save file corrupted! (存档损坏)");
+      }
+    }
+  };
+
+  const handleStartNewGame = () => {
+    const newState = createInitialState();
+    newState.phase = GamePhase.Story; // Move past MainMenu to Story
+    setState(newState);
+    audio.playCardSelect();
+  };
+
   const resetGame = () => {
     if (window.confirm("Restart Ascension? All progress will be lost. (重走仙路？当前进度将永久丢失)")) {
       localStorage.removeItem(SAVE_KEY);
@@ -304,6 +329,7 @@ const App: React.FC = () => {
       setIsRoundOver(null);
       setShopItems(GENERATE_SHOP_ITEMS(0, {}));
       setRerollCost(5);
+      setHasSave(false);
     }
   };
 
@@ -699,213 +725,245 @@ const App: React.FC = () => {
     <div className="flex h-screen w-screen bg-background-dark font-display overflow-hidden relative">
       <div className="noise-overlay" />
 
-      <Sidebar state={state} />
+      {/* Render Main Menu */}
+      {state.phase === GamePhase.MainMenu && (
+        <MainMenu
+          hasSave={hasSave}
+          onNewGame={handleStartNewGame}
+          onContinue={handleLoadGame}
+        />
+      )}
 
-      <main className="flex-1 flex flex-col relative">
-        {state.phase === GamePhase.Shop && (
-          <Shop
-            state={state}
-            shopItems={shopItems}
-            onBuyJoker={handleBuyJoker}
-            onBuyConsumable={handleBuyConsumable}
-            onSkip={handleStartNextGameplay}
-            rerollCost={rerollCost}
-            onReroll={handleReroll}
-          />
-        )}
+      {/* Only render game UI if not in MainMenu */}
+      {state.phase !== GamePhase.MainMenu && (
+        <>
+          <Sidebar state={state} />
 
-        {state.phase === GamePhase.Story && (
-          <Story state={state} onComplete={handleCompleteStory} />
-        )}
+          <main className="flex-1 flex flex-col relative">
+            {/* Top Header - Add Save/Load Buttons Here */}
+            <div className="absolute top-6 right-12 z-50 flex gap-4">
+              <button
+                onClick={handleLoadGame}
+                disabled={!hasSave}
+                className="px-4 py-1 text-xs font-bold text-zinc-400 border border-zinc-700 rounded hover:text-white hover:border-white disabled:opacity-30 transition-all"
+              >
+                LOAD (读档)
+              </button>
+              <button
+                onClick={handleSaveGame}
+                disabled={state.phase === GamePhase.Gameplay}
+                className="px-4 py-1 text-xs font-bold text-primary border border-primary/50 rounded hover:bg-primary hover:text-white disabled:opacity-30 disabled:border-zinc-700 disabled:text-zinc-600 transition-all"
+              >
+                SAVE (存档)
+              </button>
+            </div>
 
-        {state.phase === GamePhase.Event && currentEvent && (
-          <EventOverlay
-            event={currentEvent}
-            state={state}
-            onChoice={handleEventChoice}
-          />
-        )}
+            {state.phase === GamePhase.Shop && (
+              <Shop
+                state={state}
+                shopItems={shopItems}
+                onBuyJoker={handleBuyJoker}
+                onBuyConsumable={handleBuyConsumable}
+                onSkip={handleStartNextGameplay}
+                rerollCost={rerollCost}
+                onReroll={handleReroll}
+              />
+            )}
 
-        {state.phase === GamePhase.Ending && endingInfo && (
-          <EndingOverlay
-            title={endingInfo.title}
-            text={endingInfo.text}
-            isTrue={endingInfo.isTrue}
-            onRestart={() => setState(createInitialState())}
-          />
-        )}
+            {state.phase === GamePhase.Story && (
+              <Story state={state} onComplete={handleCompleteStory} />
+            )}
 
-        {/* Top Header */}
-        <div className="p-12 pb-0 flex items-center gap-8">
-          <div className="flex flex-col">
-            <span className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest italic">Progress (修为年限)</span>
-            <span className="text-xl font-medium tracking-tight text-white">Years: {state.year} / 99</span>
-          </div>
-          <div className="h-8 w-px bg-zinc-800" />
-          <div className="flex flex-col">
-            <span className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest italic">Current Hand (当前牌型)</span>
-            <span className="text-xl font-medium tracking-tight text-white">{currentHandPreview?.hand || "Select Cards"}</span>
-          </div>
-          <div className="h-8 w-px bg-zinc-800" />
-          <div className="flex flex-col">
-            <span className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest italic">Level (等级)</span>
-            <span className="text-xl font-medium tracking-tight text-white">Lv. {currentHandPreview?.level || 1}</span>
-          </div>
+            {state.phase === GamePhase.Event && currentEvent && (
+              <EventOverlay
+                event={currentEvent}
+                state={state}
+                onChoice={handleEventChoice}
+              />
+            )}
 
-          <div className="ml-auto flex gap-3">
-            {(['Head', 'Hand', 'Leg', 'Body', 'Accessory'] as const).map((slot) => {
-              const artifact = state.equipment[slot];
-              return (
-                <div key={slot} className={`px-4 py-2 bg-zinc-900 border border-white/5 rounded-xl flex flex-col items-start min-w-[120px] transition-all hover:bg-zinc-800 relative
+            {state.phase === GamePhase.Ending && endingInfo && (
+              <EndingOverlay
+                title={endingInfo.title}
+                text={endingInfo.text}
+                isTrue={endingInfo.isTrue}
+                onRestart={() => setState(createInitialState())}
+              />
+            )}
+
+            {/* Top Header */}
+            <div className="p-12 pb-0 flex items-center gap-8">
+              <div className="flex flex-col">
+                <span className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest italic">Progress (修为年限)</span>
+                <span className="text-xl font-medium tracking-tight text-white">Years: {state.year} / 99</span>
+              </div>
+              <div className="h-8 w-px bg-zinc-800" />
+              <div className="flex flex-col">
+                <span className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest italic">Current Hand (当前牌型)</span>
+                <span className="text-xl font-medium tracking-tight text-white">{currentHandPreview?.hand || "Select Cards"}</span>
+              </div>
+              <div className="h-8 w-px bg-zinc-800" />
+              <div className="flex flex-col">
+                <span className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest italic">Level (等级)</span>
+                <span className="text-xl font-medium tracking-tight text-white">Lv. {currentHandPreview?.level || 1}</span>
+              </div>
+
+              <div className="ml-auto flex gap-3">
+                {(['Head', 'Hand', 'Leg', 'Body', 'Accessory'] as const).map((slot) => {
+                  const artifact = state.equipment[slot];
+                  return (
+                    <div key={slot} className={`px-4 py-2 bg-zinc-900 border border-white/5 rounded-xl flex flex-col items-start min-w-[120px] transition-all hover:bg-zinc-800 relative
                   ${artifact?.rarity === 'Legendary' ? 'shadow-[0_0_15px_rgba(234,179,8,0.2)]' : ''}
                   ${!artifact ? 'opacity-20 translate-y-1' : ''}
                 `}>
-                  <div className="flex justify-between w-full items-center mb-1">
-                    <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded border
+                      <div className="flex justify-between w-full items-center mb-1">
+                        <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded border
                       ${artifact?.rarity === 'Common' ? 'text-zinc-400 border-zinc-400/30' :
-                        artifact?.rarity === 'Uncommon' ? 'text-green-400 border-green-400/30' :
-                          artifact?.rarity === 'Rare' ? 'text-blue-400 border-blue-400/30' :
-                            artifact?.rarity === 'Legendary' ? 'text-yellow-500 border-yellow-500/30' : 'text-zinc-700 border-zinc-700/30'}
+                            artifact?.rarity === 'Uncommon' ? 'text-green-400 border-green-400/30' :
+                              artifact?.rarity === 'Rare' ? 'text-blue-400 border-blue-400/30' :
+                                artifact?.rarity === 'Legendary' ? 'text-yellow-500 border-yellow-500/30' : 'text-zinc-700 border-zinc-700/30'}
                     `}>
-                      {artifact?.rarity || 'Empty'}
-                    </span>
-                    <span className="text-[9px] font-bold text-zinc-500">{slot}</span>
-                  </div>
-                  <span className="text-xs font-bold text-white mb-0.5">{artifact?.name || '---'}</span>
-                  {artifact && (
-                    <div className="flex justify-between w-full items-center">
-                      <span className={`text-[10px] font-black uppercase tracking-tighter
+                          {artifact?.rarity || 'Empty'}
+                        </span>
+                        <span className="text-[9px] font-bold text-zinc-500">{slot}</span>
+                      </div>
+                      <span className="text-xs font-bold text-white mb-0.5">{artifact?.name || '---'}</span>
+                      {artifact && (
+                        <div className="flex justify-between w-full items-center">
+                          <span className={`text-[10px] font-black uppercase tracking-tighter
                         ${artifact.rarity === 'Common' ? 'text-zinc-500' :
-                          artifact.rarity === 'Uncommon' ? 'text-green-500/80' :
-                            artifact.rarity === 'Rare' ? 'text-blue-500/80' :
-                              'text-yellow-500/80'}
+                              artifact.rarity === 'Uncommon' ? 'text-green-500/80' :
+                                artifact.rarity === 'Rare' ? 'text-blue-500/80' :
+                                  'text-yellow-500/80'}
                       `}>
-                        {GET_JOKER_EFFECT_DISPLAY(artifact)}
-                      </span>
-                      <span className="text-[8px] font-bold text-primary ml-2">Lv.{artifact.level}</span>
+                            {GET_JOKER_EFFECT_DISPLAY(artifact)}
+                          </span>
+                          <span className="text-[8px] font-bold text-primary ml-2">Lv.{artifact.level}</span>
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
+                  );
+                })}
+              </div>
 
-          {state.consumables.length > 0 && (
-            <div className="flex gap-2 ml-4 p-2 bg-zinc-900/50 rounded-2xl border border-white/5">
-              {state.consumables.map((c, i) => (
-                <div
-                  key={i}
-                  onClick={() => handleUseConsumable(c)}
-                  className={`
+              {state.consumables.length > 0 && (
+                <div className="flex gap-2 ml-4 p-2 bg-zinc-900/50 rounded-2xl border border-white/5">
+                  {state.consumables.map((c, i) => (
+                    <div
+                      key={i}
+                      onClick={() => handleUseConsumable(c)}
+                      className={`
                     px-4 py-2 rounded-xl border cursor-pointer hover:-translate-y-1 transition-all flex flex-col items-center min-w-[80px]
                     ${c.type === 'Planet' ? 'border-primary/20 bg-primary/5 hover:bg-primary/20' : 'border-mult-red/20 bg-mult-red/5 hover:bg-mult-red/20'}
                   `}
-                >
-                  <span className={`text-[8px] font-black uppercase mb-1 ${c.type === 'Planet' ? 'text-primary' : 'text-mult-red'}`}>{c.type}</span>
-                  <span className="text-[10px] font-bold text-white whitespace-nowrap">{c.name}</span>
+                    >
+                      <span className={`text-[8px] font-black uppercase mb-1 ${c.type === 'Planet' ? 'text-primary' : 'text-mult-red'}`}>{c.type}</span>
+                      <span className="text-[10px] font-bold text-white whitespace-nowrap">{c.name}</span>
+                    </div>
+                  ))}
                 </div>
-              ))}
+              )}
             </div>
-          )}
-        </div>
 
-        {/* Center Game Field */}
-        <div className="flex-1 flex flex-col items-center justify-center p-12 relative">
+            {/* Center Game Field */}
+            <div className="flex-1 flex flex-col items-center justify-center p-12 relative">
 
-          {isRoundOver && (
-            <div className="absolute inset-0 z-50 flex items-center justify-center bg-background-dark/80 backdrop-blur-xl animate-in fade-in duration-500">
-              <div className="flex flex-col items-center p-12 bg-zinc-900 border border-white/10 rounded-3xl shadow-2xl scale-125">
-                <h2 className={`text-6xl font-black uppercase tracking-tighter mb-4 ${isRoundOver === 'victory' ? 'text-primary' : 'text-mult-red'}`}>
-                  {isRoundOver === 'victory' ? 'Victory! (胜利)' : 'Defeat! (失败)'}
-                </h2>
-                <div className="flex gap-12 mb-8">
-                  <div className="text-center">
-                    <p className="text-xs text-zinc-500 uppercase font-bold mb-1">Final Tao</p>
-                    <p className="text-4xl font-black text-white">{state.tao.toLocaleString()}</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-xs text-zinc-500 uppercase font-bold mb-1">Goal</p>
-                    <p className="text-4xl font-black text-zinc-400">{state.goal.toLocaleString()}</p>
+              {isRoundOver && (
+                <div className="absolute inset-0 z-50 flex items-center justify-center bg-background-dark/80 backdrop-blur-xl animate-in fade-in duration-500">
+                  <div className="flex flex-col items-center p-12 bg-zinc-900 border border-white/10 rounded-3xl shadow-2xl scale-125">
+                    <h2 className={`text-6xl font-black uppercase tracking-tighter mb-4 ${isRoundOver === 'victory' ? 'text-primary' : 'text-mult-red'}`}>
+                      {isRoundOver === 'victory' ? 'Victory! (胜利)' : 'Defeat! (失败)'}
+                    </h2>
+                    <div className="flex gap-12 mb-8">
+                      <div className="text-center">
+                        <p className="text-xs text-zinc-500 uppercase font-bold mb-1">Final Tao</p>
+                        <p className="text-4xl font-black text-white">{state.tao.toLocaleString()}</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-xs text-zinc-500 uppercase font-bold mb-1">Goal</p>
+                        <p className="text-4xl font-black text-zinc-400">{state.goal.toLocaleString()}</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={handleNextRound}
+                      className="px-10 py-4 bg-white text-black font-black text-lg rounded-xl hover:bg-zinc-200 transition-all active:scale-95"
+                    >
+                      {isRoundOver === 'victory' ? 'Go to Shop (前往商店)' : 'Retry (重新开始)'}
+                    </button>
                   </div>
                 </div>
+              )}
+
+              {currentHandPreview && (
+                <div className="mb-8 flex gap-4 animate-in fade-in slide-in-from-bottom-4 duration-300">
+                  <div className="px-6 py-4 bg-primary/10 border border-primary/30 rounded-xl flex flex-col items-center shadow-2xl backdrop-blur-md">
+                    <span className="text-[10px] font-bold text-primary uppercase tracking-widest mb-1">Chips (筹码)</span>
+                    <span className="text-2xl font-bold text-white tabular-nums">{currentHandPreview.chips}</span>
+                  </div>
+                  <div className="px-6 py-4 bg-mult-red/10 border border-mult-red/30 rounded-xl flex flex-col items-center shadow-2xl backdrop-blur-md">
+                    <span className="text-[10px] font-bold text-mult-red uppercase tracking-widest mb-1">Mult (倍率)</span>
+                    <span className="text-2xl font-bold text-white tabular-nums">{currentHandPreview.mult} × {currentHandPreview.xMult.toFixed(1)}</span>
+                  </div>
+                  <div className="px-8 py-4 bg-white/5 border border-white/10 rounded-xl flex flex-col items-center shadow-2xl backdrop-blur-md min-w-[160px]">
+                    <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1">Predict (预计得分)</span>
+                    <span className="text-3xl font-black text-white tabular-nums">{currentHandPreview.total.toLocaleString()}</span>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex gap-4 items-end h-[300px]">
+                {state.cards.map(card => (
+                  <Card
+                    key={card.id}
+                    card={card}
+                    isSelected={selectedIds.has(card.id)}
+                    onToggleSelect={handleToggleCard}
+                  />
+                ))}
+              </div>
+            </div>
+
+            {/* Bottom Bar Controls */}
+            <footer className="h-24 border-t border-zinc-800/50 bg-[#0d0d0d] flex items-center px-12 z-20 shrink-0">
+              <div className="flex gap-4">
                 <button
-                  onClick={handleNextRound}
-                  className="px-10 py-4 bg-white text-black font-black text-lg rounded-xl hover:bg-zinc-200 transition-all active:scale-95"
-                >
-                  {isRoundOver === 'victory' ? 'Go to Shop (前往商店)' : 'Retry (重新开始)'}
-                </button>
-              </div>
-            </div>
-          )}
-
-          {currentHandPreview && (
-            <div className="mb-8 flex gap-4 animate-in fade-in slide-in-from-bottom-4 duration-300">
-              <div className="px-6 py-4 bg-primary/10 border border-primary/30 rounded-xl flex flex-col items-center shadow-2xl backdrop-blur-md">
-                <span className="text-[10px] font-bold text-primary uppercase tracking-widest mb-1">Chips (筹码)</span>
-                <span className="text-2xl font-bold text-white tabular-nums">{currentHandPreview.chips}</span>
-              </div>
-              <div className="px-6 py-4 bg-mult-red/10 border border-mult-red/30 rounded-xl flex flex-col items-center shadow-2xl backdrop-blur-md">
-                <span className="text-[10px] font-bold text-mult-red uppercase tracking-widest mb-1">Mult (倍率)</span>
-                <span className="text-2xl font-bold text-white tabular-nums">{currentHandPreview.mult} × {currentHandPreview.xMult.toFixed(1)}</span>
-              </div>
-              <div className="px-8 py-4 bg-white/5 border border-white/10 rounded-xl flex flex-col items-center shadow-2xl backdrop-blur-md min-w-[160px]">
-                <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1">Predict (预计得分)</span>
-                <span className="text-3xl font-black text-white tabular-nums">{currentHandPreview.total.toLocaleString()}</span>
-              </div>
-            </div>
-          )}
-
-          <div className="flex gap-4 items-end h-[300px]">
-            {state.cards.map(card => (
-              <Card
-                key={card.id}
-                card={card}
-                isSelected={selectedIds.has(card.id)}
-                onToggleSelect={handleToggleCard}
-              />
-            ))}
-          </div>
-        </div>
-
-        {/* Bottom Bar Controls */}
-        <footer className="h-24 border-t border-zinc-800/50 bg-[#0d0d0d] flex items-center px-12 z-20 shrink-0">
-          <div className="flex gap-4">
-            <button
-              onClick={handlePlayHand}
-              disabled={selectedIds.size === 0 || state.handsLeft === 0 || isRoundOver !== null || state.phase !== GamePhase.Gameplay}
-              className={`
+                  onClick={handlePlayHand}
+                  disabled={selectedIds.size === 0 || state.handsLeft === 0 || isRoundOver !== null || state.phase !== GamePhase.Gameplay}
+                  className={`
                 bg-primary hover:bg-primary/90 text-white font-bold text-sm px-10 py-3.5 rounded-lg 
                 flex items-center gap-2 transition-all active:scale-95 disabled:opacity-50 disabled:grayscale
               `}
-            >
-              PLAY HAND (出牌)
-              <span className="material-symbols-outlined text-sm">play_arrow</span>
-            </button>
-            <button
-              onClick={handleDiscard}
-              disabled={selectedIds.size === 0 || state.discardsLeft === 0 || isRoundOver !== null || state.phase !== GamePhase.Gameplay}
-              className={`
+                >
+                  PLAY HAND (出牌)
+                  <span className="material-symbols-outlined text-sm">play_arrow</span>
+                </button>
+                <button
+                  onClick={handleDiscard}
+                  disabled={selectedIds.size === 0 || state.discardsLeft === 0 || isRoundOver !== null || state.phase !== GamePhase.Gameplay}
+                  className={`
                 border border-mult-red/40 hover:bg-mult-red/10 text-mult-red font-bold text-sm px-10 py-3.5 
                 rounded-lg transition-all active:scale-95 disabled:opacity-30
               `}
-            >
-              DISCARD (弃牌)
-            </button>
-          </div>
+                >
+                  DISCARD (弃牌)
+                </button>
+              </div>
 
-          <div className="ml-auto flex items-center gap-6 bg-zinc-900/40 px-5 py-2.5 rounded-xl border border-zinc-800/50">
-            <div className="flex flex-col items-end">
-              <span className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest">Deck (剩余牌组)</span>
-              <span className="text-lg font-bold text-zinc-400">{state.deck.length}</span>
-            </div>
-            <div className="h-8 w-px bg-zinc-800" />
-            <div className="flex flex-col items-end">
-              <span className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest">Money (持有金钱)</span>
-              <span className="text-lg font-bold text-yellow-500">${state.money}</span>
-            </div>
-          </div>
-        </footer>
-      </main>
+              <div className="ml-auto flex items-center gap-6 bg-zinc-900/40 px-5 py-2.5 rounded-xl border border-zinc-800/50">
+                <div className="flex flex-col items-end">
+                  <span className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest">Deck (剩余牌组)</span>
+                  <span className="text-lg font-bold text-zinc-400">{state.deck.length}</span>
+                </div>
+                <div className="h-8 w-px bg-zinc-800" />
+                <div className="flex flex-col items-end">
+                  <span className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest">Stones (持有灵石)</span>
+                  <span className="text-lg font-bold text-yellow-500">${state.spiritStones}</span>
+                </div>
+              </div>
+            </footer>
+          </main>
+        </>
+      )}
     </div>
   );
 };
