@@ -184,7 +184,11 @@ const App: React.FC = () => {
   const handleNextRound = () => {
     if (isRoundOver === 'victory') {
       audio.playCardSelect();
-      setState(prev => ({ ...prev, phase: GamePhase.Shop }));
+      setState(prev => ({
+        ...prev,
+        phase: GamePhase.Shop,
+        money: prev.money + 5 // Reward moved here so it's available in shop
+      }));
       setShopItems(GENERATE_SHOP_ITEMS());
     } else {
       audio.playDefeat();
@@ -229,29 +233,35 @@ const App: React.FC = () => {
     audio.playPlayHand();
     let nextRound = state.round + 1;
     let nextAnte = state.ante;
+    let enteringStory = false;
+
     if (nextRound > 3) {
       nextRound = 1;
       nextAnte += 1;
-      setState(prev => ({ ...prev, phase: GamePhase.Story, storyProgress: prev.storyProgress + 1 }));
-    } else {
-      const fullDeck = GENERATE_DECK();
-      const initialHand = SORT_CARDS_BY_RANK(fullDeck.slice(0, HAND_SIZE));
-
-      setState(prev => ({
-        ...prev,
-        phase: GamePhase.Gameplay,
-        round: nextRound,
-        ante: nextAnte,
-        goal: CALCULATE_GOAL(nextAnte, nextRound),
-        score: 0,
-        handsLeft: 4,
-        discardsLeft: 3,
-        currentBlind: GET_BLIND_NAME(nextRound),
-        cards: initialHand,
-        deck: fullDeck.slice(HAND_SIZE),
-        money: prev.money + 5
-      }));
+      enteringStory = true;
     }
+
+    const fullDeck = GENERATE_DECK();
+    const initialHand = SORT_CARDS_BY_RANK(fullDeck.slice(0, HAND_SIZE));
+
+    const nextState = {
+      round: nextRound,
+      ante: nextAnte,
+      goal: CALCULATE_GOAL(nextAnte, nextRound),
+      score: 0,
+      handsLeft: 4,
+      discardsLeft: 3,
+      currentBlind: GET_BLIND_NAME(nextRound),
+      cards: initialHand,
+      deck: fullDeck.slice(HAND_SIZE),
+    };
+
+    setState(prev => ({
+      ...prev,
+      ...nextState,
+      phase: enteringStory ? GamePhase.Story : GamePhase.Gameplay,
+      storyProgress: enteringStory ? prev.storyProgress + 1 : prev.storyProgress
+    }));
   };
 
   const handleCompleteStory = () => {
