@@ -302,15 +302,21 @@ const App: React.FC = () => {
 
   const handleUseConsumable = (consumable: Consumable) => {
     audio.playPlayHand();
+
+    // Some effects need to clear selection
+    if (consumable.id === 'c_the_hanged_man') {
+      setSelectedIds(new Set());
+    }
+
     setState(prev => {
       let newHandLevels = { ...prev.handLevels };
       let planetsUsed = prev.planetsUsed;
       let newCards = [...prev.cards];
       let newSpiritStones = prev.spiritStones;
       let newCurrentBlind = prev.currentBlind;
-      let newConsumables = prev.consumables.filter(c => c.id !== consumable.id);
+      let newConsumables = [...prev.consumables].filter(c => c.id !== consumable.id);
 
-      const selectedCards = newCards.filter(c => selectedIds.has(c.id));
+      const selectedIdsList = Array.from(selectedIds);
 
       if (consumable.type === 'Planet') {
         planetsUsed++;
@@ -333,60 +339,109 @@ const App: React.FC = () => {
             const blindNames = ['Chi Gathering', 'Foundation', 'Golden Core', 'Nascent Soul', 'Spirit Severing', 'Dao Seeking', 'Immortal Ascent'];
             newCurrentBlind = blindNames[Math.floor(Math.random() * blindNames.length)] + " (Rerolled)";
             break;
+
           case 'c_the_magician': // Sun-Moon Swap - Wild
-            selectedCards.forEach(c => c.enhancement = Enhancement.Wild);
+            newCards = newCards.map(c => selectedIds.has(c.id) ? { ...c, enhancement: Enhancement.Wild } : c);
             break;
-          case 'c_the_empress': // Mult Avatar - Mult
-            selectedCards.slice(0, 2).forEach(c => c.enhancement = Enhancement.Mult);
+
+          case 'c_the_empress': // Mult Avatar - Mult (2 cards)
+            {
+              const targets = selectedIdsList.slice(0, 2);
+              newCards = newCards.map(c => targets.includes(c.id) ? { ...c, enhancement: Enhancement.Mult } : c);
+            }
             break;
-          case 'c_the_hierophant': // Tendon Change - Bonus
-            selectedCards.slice(0, 2).forEach(c => c.enhancement = Enhancement.Bonus);
+
+          case 'c_the_hierophant': // Tendon Change - Bonus (2 cards)
+            {
+              const targets = selectedIdsList.slice(0, 2);
+              newCards = newCards.map(c => targets.includes(c.id) ? { ...c, enhancement: Enhancement.Bonus } : c);
+            }
             break;
-          case 'c_the_chariot': // Diamond Body - Steel
-            selectedCards.slice(0, 1).forEach(c => c.enhancement = Enhancement.Steel);
+
+          case 'c_the_chariot': // Diamond Body - Steel (1 card)
+            newCards = newCards.map(c => selectedIdsList[0] === c.id ? { ...c, enhancement: Enhancement.Steel } : c);
             break;
-          case 'c_the_devil': // Demon Dissolution - Glass
-            selectedCards.slice(0, 1).forEach(c => c.enhancement = Enhancement.Glass);
+
+          case 'c_the_devil': // Demon Dissolution - Glass (1 card)
+            newCards = newCards.map(c => selectedIdsList[0] === c.id ? { ...c, enhancement: Enhancement.Glass } : c);
             break;
-          case 'c_the_tower': // Immovable King - Stone
-            selectedCards.slice(0, 1).forEach(c => c.enhancement = Enhancement.Stone);
+
+          case 'c_the_tower': // Immovable King - Stone (1 card)
+            newCards = newCards.map(c => selectedIdsList[0] === c.id ? { ...c, enhancement: Enhancement.Stone } : c);
             break;
-          case 'c_the_emperor': // Point to Gold - Gold
-            selectedCards.slice(0, 1).forEach(c => c.enhancement = Enhancement.Gold);
+
+          case 'c_the_emperor': // Point to Gold - Gold (1 card)
+            newCards = newCards.map(c => selectedIdsList[0] === c.id ? { ...c, enhancement: Enhancement.Gold } : c);
             break;
-          case 'c_the_temperance': // Spirit Toad - Double Money
-            const gain = Math.min(prev.spiritStones, 20);
-            newSpiritStones += gain;
+
+          case 'c_the_temperance': // Spirit Toad - Double Money (Max +20)
+            newSpiritStones += Math.min(prev.spiritStones, 20);
             break;
-          case 'c_the_hanged_man': // Slaying Three Corpses - Destroy
-            newCards = newCards.filter(c => !selectedIds.has(c.id));
-            setSelectedIds(new Set());
+
+          case 'c_the_hanged_man': // Slaying Three Corpses - Destroy (up to 2)
+            {
+              const toDestroy = selectedIdsList.slice(0, 2);
+              newCards = newCards.filter(c => !toDestroy.includes(c.id));
+            }
             break;
+
           case 'c_death': // Nirvana Finger - Clone
-            if (selectedCards.length >= 2) {
-              const left = selectedCards[0];
-              const rightIndex = newCards.findIndex(c => c.id === selectedCards[1].id);
-              if (rightIndex !== -1) {
-                newCards[rightIndex] = { ...left, id: Math.random().toString(36).substr(2, 9) };
+            if (selectedIdsList.length >= 2) {
+              const left = newCards.find(c => c.id === selectedIdsList[0]);
+              const rightIdx = newCards.findIndex(c => c.id === selectedIdsList[1]);
+              if (left && rightIdx !== -1) {
+                newCards[rightIdx] = { ...left, id: Math.random().toString(36).substr(2, 9) };
               }
             }
             break;
+
           case 'c_the_hermit': // Celestial Omen - Spawn 2 Elixirs
-            const elixirs = CONSUMABLE_POOL.filter(c => c.type === 'Planet');
-            for (let i = 0; i < 2 && newConsumables.length < 2; i++) {
-              newConsumables.push({ ...elixirs[Math.floor(Math.random() * elixirs.length)] });
+            {
+              const elixirs = CONSUMABLE_POOL.filter(c => c.type === 'Planet');
+              for (let i = 0; i < 2 && newConsumables.length < 2; i++) {
+                const randomElixir = elixirs[Math.floor(Math.random() * elixirs.length)];
+                newConsumables.push({ ...randomElixir, id: `c_spawn_${Math.random()}` });
+              }
             }
             break;
+
           case 'c_the_high_priestess': // External Avatar - Spawn 2 Scrolls
-            const scrolls = CONSUMABLE_POOL.filter(c => c.type === 'Tarot');
-            for (let i = 0; i < 2 && newConsumables.length < 2; i++) {
-              newConsumables.push({ ...scrolls[Math.floor(Math.random() * scrolls.length)] });
+            {
+              const scrolls = CONSUMABLE_POOL.filter(c => c.type === 'Tarot');
+              for (let i = 0; i < 2 && newConsumables.length < 2; i++) {
+                const randomScroll = scrolls[Math.floor(Math.random() * scrolls.length)];
+                newConsumables.push({ ...randomScroll, id: `c_spawn_${Math.random()}` });
+              }
             }
             break;
-          case 'c_the_world': selectedCards.slice(0, 3).forEach(c => c.suit = 'SPADES'); break;
-          case 'c_the_sun': selectedCards.slice(0, 3).forEach(c => c.suit = 'HEARTS'); break;
-          case 'c_the_star': selectedCards.slice(0, 3).forEach(c => c.suit = 'DIAMONDS'); break;
-          case 'c_the_moon': selectedCards.slice(0, 3).forEach(c => c.suit = 'CLUBS'); break;
+
+          case 'c_the_world': // 四象：黑桃
+            {
+              const targets = selectedIdsList.slice(0, 3);
+              newCards = newCards.map(c => targets.includes(c.id) ? { ...c, suit: 'SPADES' } : c);
+            }
+            break;
+
+          case 'c_the_sun': // 四象：红桃
+            {
+              const targets = selectedIdsList.slice(0, 3);
+              newCards = newCards.map(c => targets.includes(c.id) ? { ...c, suit: 'HEARTS' } : c);
+            }
+            break;
+
+          case 'c_the_star': // 四象：方块
+            {
+              const targets = selectedIdsList.slice(0, 3);
+              newCards = newCards.map(c => targets.includes(c.id) ? { ...c, suit: 'DIAMONDS' } : c);
+            }
+            break;
+
+          case 'c_the_moon': // 四象：梅花
+            {
+              const targets = selectedIdsList.slice(0, 3);
+              newCards = newCards.map(c => targets.includes(c.id) ? { ...c, suit: 'CLUBS' } : c);
+            }
+            break;
         }
       }
 
