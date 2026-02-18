@@ -36,6 +36,7 @@ export interface Joker {
   name: string;
   rarity: 'Common' | 'Uncommon' | 'Rare' | 'Legendary';
   level: number;
+  slot: 'Head' | 'Hand' | 'Leg' | 'Body' | 'Accessory';
   effect: string;
   price: number;
   description: string;
@@ -59,23 +60,22 @@ export enum GamePhase {
 export interface GameState {
   phase: GamePhase;
   currentBlind: string;
-  score: number;
+  tao: number;      // Previously score
   goal: number;
-  chips: number; // For the current hand calculation
-  mult: number;  // For the current hand calculation
+  chips: number;     // For current hand calculation
+  mult: number;      // For current hand calculation
   handsLeft: number;
   discardsLeft: number;
-  money: number;
+  spiritStones: number; // Previously money
   pokerHand: PokerHand;
   level: number;
   handLevels: Record<PokerHand, number>;
   cards: CardData[];
   deck: CardData[];
-  jokers: string[]; // Joker IDs
-  jokersData: Joker[]; // Active jokers
+  equipment: Record<'Head' | 'Hand' | 'Leg' | 'Body' | 'Accessory', Joker | null>;
   consumables: Consumable[];
   ante: number;
-  round: number;
+  year: number;     // Previously round
   storyProgress: number;
   planetsUsed: number;
   handPlayCounts: Record<string, number>;

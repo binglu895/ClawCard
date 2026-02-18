@@ -8,30 +8,30 @@ interface StoryProps {
 
 const DIALOGUES: Record<number, string[]> = {
     0: [
-        "Welcome to the Neon Underground. (欢迎来到霓虹地下城。)",
-        "Here, poker isn't just a game. It's a glitch in the financial matrix. (在这里，扑克不仅是游戏。它是金融母体的一个漏洞。)",
-        "Win enough chips to overload the local node, or get deleted by the system. (赢取足够的筹码来过载本地节点，否则你将被系统删除。)",
-        "Check the shop for Jokers. They're your payloads. Use them wisely. (去商店看看小丑牌。它们是你的加力载荷。明智地使用它们。)"
+        "Welcome to the Path of Immortality. (欢迎踏上寻仙之路。)",
+        "Here, your Tao is not just a score. It is your essence. (在这里，你的道行不仅是分数。它是你的本原。)",
+        "Overcome the tribulations of each year, or be consumed by the chaos. (渡过每年的劫难，否则你将被混沌吞噬。)",
+        "Equip Artifacts to your five vital centers. They are your shield and sword. (将法宝装备于你的五大要穴。它们是你的盾与剑。)"
     ],
     1: [
-        "First Ante breached. The system is starting to log your activity. (第一个底注阶级已突破。系统开始记录你的活动。)",
-        "Security protocols are scaling. The score targets will grow faster now. (安防协议正在升级。分数目标现在会增长得更快。)",
-        "Don't get cocky. The Watchers are beginning to take interest. (别自大。监视者们开始对你感兴趣了。)"
+        "You have survived the initial gathering of Chi. (你已平安渡过聚气期。)",
+        "The heavens are watching your progress. The tribulations will grow heavier. (上天在注视着你的进步。劫难将变得更加沉重。)",
+        "Strengthen your artifacts. The path only gets steeper. (强化你的法宝。前方的路只会更加陡峭。)"
     ],
     2: [
-        "Ante 2 down. You're becoming a significant anomaly. (通过了 Ante 2。你正在变成一个显著的异常。)",
-        "The financial district is feeling the heat. They're deploying 'Boss Blinds' to stop you. (金融区感到了压力。他们正在部署“首领盲注”来阻止你。)",
-        "Break their rules, or they'll break you. (打破他们的规则，否则他们会粉碎你。)"
+        "Foundation established. You are no longer a mere mortal. (筑基已成。你不再是一介凡夫。)",
+        "The Spirit Stones you gather will fuel your ascension. (你收集的灵石将助你升仙。)",
+        "Do not let the neon lights of the old world blind your inner eye. (莫让旧世界的霓虹灯火迷了你的心智。)"
     ],
     3: [
-        "Still alive? Impressive. (还活着？令人印象深刻。)",
-        "You're skimming millions off the accounts. The Grand Arbitrator won't be happy. (你正从账户中窃取数百万资金。大仲裁官不会高兴的。)",
-        "The shop is getting more specialized. Look for the 'Rare' payloads. (商店正变得越来越专业。寻找那些“稀有”的载荷。)"
+        "Golden Core formed. A beacon of light in the data void. (金丹结成。数据虚空中的一盏明灯。)",
+        "The Grand Arbitrator is mobilizing the system firewall. (大仲裁官正在动员系统防火墙。)",
+        "Equip yourself with Rare Artifacts to pierce through the corruption. (装备稀有法宝，刺破腐朽。)"
     ],
     4: [
-        "Halfway through the core. Can you feel the rush of the data stream? (核心进度过半。你能感觉到数据流的冲击吗？)",
-        "Many have come this far and traded their souls for a few extra Mults. (许多来到这里的人为了额外的倍率而交易了他们的灵魂。)",
-        "Keep your focus. The deeper we go, the more the void stares back. (保持专注。我们走得越深，虚空的回响就越响亮。)"
+        "Nascent Soul emerged. You are one with the flow. (元婴显现。你与道合一。)",
+        "Can you feel the 99 years of destiny pulling you forward? (你能感觉到 99 年的宿命在拉你前行吗？)",
+        "The higher you climb, the harder the fall. Balance is key. (爬得越高，摔得越重。平衡是关键。)"
     ],
     5: [
         "Ante 5. The system is screaming. Financial markets are in chaos. (Ante 5。系统在痛苦尖叫。金融市场陷入一片混乱。)",

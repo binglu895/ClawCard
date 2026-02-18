@@ -119,6 +119,11 @@ export const SHUFFLE_ARRAY = <T,>(array: T[]): T[] => {
     return result;
 };
 
+export const GET_BLIND_NAME = (year: number): string => {
+    const names = ['Chi Gathering (聚气期)', 'Foundation (筑基期)', 'Golden Core (金丹期)', 'Nascent Soul (元婴期)', 'Spirit Severing (化神期)', 'Dao Seeking (入道期)', 'Immortal Ascent (升仙期)', 'Grand Arbitrator (终极大劫)'];
+    return names[Math.min(year - 1, names.length - 1)];
+};
+
 export const GET_RANK_VALUE = (rank: string): number => {
     if (rank === 'A') return 14;
     if (rank === 'K') return 13;
@@ -141,22 +146,22 @@ export const CALCULATE_GOAL = (ante: number, round: number): number => {
 };
 
 export const JOKER_POOL: Joker[] = [
-    { id: 'j_joker', name: 'Joker (小丑)', rarity: 'Common', level: 1, price: 4, effect: '+4 Mult', description: '简单的倍率加成。' },
-    { id: 'j_greedy', name: 'Greedy Joker (贪婪小丑)', rarity: 'Common', level: 1, price: 5, effect: 'Diamonds give +4 Mult', description: '方块牌提供额外倍率。' },
-    { id: 'j_lusty', name: 'Lusty Joker (好色小丑)', rarity: 'Common', level: 1, price: 5, effect: 'Hearts give +4 Mult', description: '红桃牌提供额外倍率。' },
-    { id: 'j_wrathful', name: 'Wrathful Joker (愤怒小丑)', rarity: 'Common', level: 1, price: 5, effect: 'Spades give +4 Mult', description: '黑桃牌提供额外倍率。' },
-    { id: 'j_gluttonous', name: 'Gluttonous Joker (贪食小丑)', rarity: 'Common', level: 1, price: 5, effect: 'Clubs give +4 Mult', description: '梅花牌提供额外倍率。' },
-    { id: 'j_blue_joker', name: 'Blue Joker (蓝色小丑)', rarity: 'Uncommon', level: 1, price: 6, effect: '+2 Chips per card in deck', description: '根据牌组余量提供筹码。' },
-    { id: 'j_abstract', name: 'Abstract Joker (抽象小丑)', rarity: 'Common', level: 1, price: 4, effect: '+3 Mult per Joker', description: '每拥有一张小丑牌获得倍率。' },
-    { id: 'j_odd_todd', name: 'Odd Todd (奇数托德)', rarity: 'Common', level: 1, price: 5, effect: 'Odd cards give +30 Chips', description: '奇数点数牌提供加成。' },
-    { id: 'j_even_steven', name: 'Even Steven (偶数史蒂文)', rarity: 'Common', level: 1, price: 5, effect: 'Even cards give +4 Mult', description: '偶数点数牌提供加成。' },
-    { id: 'j_constellation', name: 'Constellation (星盘)', rarity: 'Uncommon', level: 1, price: 6, effect: 'Gain x0.1 Mult per Planet', description: '已消费行星牌提供全局倍率。' },
-    { id: 'j_stuntman', name: 'Stuntman (特技演员)', rarity: 'Rare', level: 1, price: 8, effect: '+250 Chips, -2 Hand Size', description: '巨大的筹码加成。' },
-    { id: 'j_supernova', name: 'Supernova (超新星)', rarity: 'Uncommon', level: 1, price: 6, effect: '+Mult based on hand use', description: '根据出牌频率叠加倍率。' },
+    { id: 'j_joker', name: 'Art of Breath (吐纳术)', rarity: 'Common', level: 1, slot: 'Head', price: 4, effect: '+4 Tao', description: '基础修仙法门。' },
+    { id: 'j_greedy', name: 'Diamond Finger (金刚指)', rarity: 'Common', level: 1, slot: 'Hand', price: 5, effect: 'Diamonds give +4 Tao', description: '方块牌提供额外道行。' },
+    { id: 'j_lusty', name: 'Lotus Palm (红莲掌)', rarity: 'Common', level: 1, slot: 'Hand', price: 5, effect: 'Hearts give +4 Tao', description: '红桃牌提供额外道行。' },
+    { id: 'j_wrathful', name: 'Dark Slasher (玄铁重剑)', rarity: 'Common', level: 1, slot: 'Hand', price: 5, effect: 'Spades give +4 Tao', description: '黑桃牌提供额外道行。' },
+    { id: 'j_gluttonous', name: 'Emerald Staff (翠竹仗)', rarity: 'Common', level: 1, slot: 'Hand', price: 5, effect: 'Clubs give +4 Tao', description: '梅花牌提供额外道行。' },
+    { id: 'j_blue_joker', name: 'Blue Sky Robe (青天法袍)', rarity: 'Uncommon', level: 1, slot: 'Body', price: 6, effect: '+2 Tao per card in deck', description: '根据牌组余量提供道行。' },
+    { id: 'j_abstract', name: 'Seven-Star Ring (七星戒)', rarity: 'Common', level: 1, slot: 'Accessory', price: 4, effect: '+3 Tao per Artifact', description: '每装备一件法宝获得道行。' },
+    { id: 'j_odd_todd', name: 'Unicorn Boots (麒麟靴)', rarity: 'Common', level: 1, slot: 'Leg', price: 5, effect: 'Odd cards give +30 Tao', description: '奇数点数牌提供加成。' },
+    { id: 'j_even_steven', name: 'Dragon Boots (真龙靴)', rarity: 'Common', level: 1, slot: 'Leg', price: 5, effect: 'Even cards give +4 Tao', description: '偶数点数牌提供加成。' },
+    { id: 'j_constellation', name: 'Celestial Pendant (星曜佩)', rarity: 'Uncommon', level: 1, slot: 'Accessory', price: 6, effect: 'Gain x0.1 Tao per Planet', description: '已消费行星牌提供全局道行。' },
+    { id: 'j_stuntman', name: 'Heavenly Helmet (乾坤盔)', rarity: 'Rare', level: 1, slot: 'Head', price: 8, effect: '+250 Tao, -2 Hand Size', description: '巨大的道行加成。' },
+    { id: 'j_supernova', name: 'Nine-Turn Pill (九转丹)', rarity: 'Uncommon', level: 1, slot: 'Accessory', price: 6, effect: '+Tao based on hand use', description: '根据出牌频率叠加道行。' },
 ];
 
-export const GET_JOKER_STATS = (joker: Joker): { chips: number, mult: number, xMult: number } => {
-    const stats = { chips: 0, mult: 0, xMult: 1 };
+export const GET_JOKER_STATS = (joker: Joker): { tao: number, mult: number, xMult: number } => {
+    const stats = { tao: 0, mult: 0, xMult: 1 };
     const levelScale = joker.level;
 
     switch (joker.id) {
@@ -171,19 +176,19 @@ export const GET_JOKER_STATS = (joker: Joker): { chips: number, mult: number, xM
             stats.mult = 4 * levelScale;
             break;
         case 'j_blue_joker':
-            stats.chips = 2 * levelScale;
+            stats.tao = 2 * levelScale;
             break;
         case 'j_abstract':
             stats.mult = 3 * levelScale;
             break;
         case 'j_odd_todd':
-            stats.chips = 30 * levelScale;
+            stats.tao = 30 * levelScale;
             break;
         case 'j_constellation':
             stats.xMult = 0.1 * levelScale; // Added per planet
             break;
         case 'j_stuntman':
-            stats.chips = 250 * levelScale;
+            stats.tao = 250 * levelScale;
             break;
         case 'j_supernova':
             stats.mult = 1 * levelScale; // Multiplied by hand play count
@@ -194,23 +199,21 @@ export const GET_JOKER_STATS = (joker: Joker): { chips: number, mult: number, xM
 
 export const GET_JOKER_EFFECT_DISPLAY = (joker: Joker): string => {
     const stats = GET_JOKER_STATS(joker);
-    if (joker.id === 'j_constellation') return `x${(1 + stats.xMult).toFixed(1)} Mult / Planet`;
-    if (joker.id === 'j_abstract') return `+${stats.mult} Mult / Joker`;
-    if (joker.id === 'j_odd_todd') return `+${stats.chips} Chips (Odd)`;
-    if (joker.id === 'j_even_steven') return `+${stats.mult} Mult (Even)`;
-    if (joker.id === 'j_blue_joker') return `+${stats.chips} Chips / Card`;
-    if (joker.id === 'j_stuntman') return `+${stats.chips} Chips`;
-    if (joker.id === 'j_supernova') return `+${stats.mult} Mult / Hand Play`;
+    if (joker.id === 'j_constellation') return `x${(1 + stats.xMult).toFixed(1)} Tao / Planet`;
+    if (joker.id === 'j_abstract') return `+${stats.mult} Tao / Artifact`;
+    if (joker.id === 'j_odd_todd') return `+${stats.tao} Tao (Odd)`;
+    if (joker.id === 'j_even_steven') return `+${stats.mult} Tao (Even)`;
+    if (joker.id === 'j_blue_joker') return `+${stats.tao} Tao / Card`;
+    if (joker.id === 'j_stuntman') return `+${stats.tao} Tao`;
+    if (joker.id === 'j_supernova') return `+${stats.mult} Tao / Year Play`;
 
-    if (stats.mult > 0) return `+${stats.mult} Mult`;
-    if (stats.chips > 0) return `+${stats.chips} Chips`;
-    if (stats.xMult > 1) return `x${stats.xMult} Mult`;
+    if (stats.mult > 0) return `+${stats.mult} Tao`;
+    if (stats.tao > 0) return `+${stats.tao} Tao`;
+    if (stats.xMult > 1) return `x${stats.xMult} Tao`;
     return joker.effect;
 };
 
 export const CONSUMABLE_POOL: Consumable[] = [
-    { id: 'c_pluto', name: 'Pluto (冥王星)', type: 'Planet', price: 3, effect: 'Level up High Card', description: '提升高牌等级。' },
-    { id: 'c_mercury', name: 'Mercury (水星)', type: 'Planet', price: 3, effect: 'Level up Pair', description: '提升对子等级。' },
     { id: 'c_uranus', name: 'Uranus (天王星)', type: 'Planet', price: 3, effect: 'Level up Two Pair', description: '提升两对等级。' },
     { id: 'c_venus', name: 'Venus (金星)', type: 'Planet', price: 3, effect: 'Level up Three of a Kind', description: '提升三条等级。' },
     { id: 'c_saturn', name: 'Saturn (土星)', type: 'Planet', price: 3, effect: 'Level up Straight', description: '提升顺子等级。' },

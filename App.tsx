@@ -37,23 +37,24 @@ const createInitialState = (): GameState => {
   return {
     phase: GamePhase.Story,
     currentBlind: GET_BLIND_NAME(1),
-    score: 0,
+    tao: 0,
     goal: CALCULATE_GOAL(1, 1),
     chips: 0,
     mult: 0,
     handsLeft: 4,
     discardsLeft: 3,
-    money: 4,
+    spiritStones: 4,
     pokerHand: "High Card",
     level: 1,
     handLevels: INITIAL_HAND_LEVELS,
     cards: initialHand,
     deck: remainingDeck,
-    jokers: [],
-    jokersData: [],
+    equipment: {
+      Head: null, Hand: null, Leg: null, Body: null, Accessory: null
+    },
     consumables: [],
     ante: 1,
-    round: 1,
+    year: 1,
     storyProgress: 0,
     planetsUsed: 0,
     handPlayCounts: {}
@@ -86,14 +87,15 @@ const App: React.FC = () => {
       xMult *= CALCULATE_CARD_X_MULT(c);
     });
 
-    // Joker Bonuses
-    state.jokersData.forEach(j => {
+    // Artifact (Equipment) Bonuses
+    (Object.values(state.equipment) as (Joker | null)[]).forEach(j => {
+      if (!j) return;
       const stats = GET_JOKER_STATS(j);
       const isOdd = (rank: string) => ['A', '3', '5', '7', '9'].includes(rank);
       const isEven = (rank: string) => ['2', '4', '6', '8', '10', 'Q'].includes(rank); // Simplified
 
       // Apply base stats
-      chips += stats.chips;
+      chips += stats.tao;
       mult += stats.mult;
       xMult *= (j.id === 'j_constellation' ? (1 + stats.xMult * state.planetsUsed) : stats.xMult);
 
@@ -115,14 +117,15 @@ const App: React.FC = () => {
         mult += stats.mult * clubs;
       }
       if (j.id === 'j_blue_joker') {
-        chips += stats.chips * state.deck.length;
+        chips += stats.tao * state.deck.length;
       }
       if (j.id === 'j_abstract') {
-        mult += stats.mult * state.jokersData.length;
+        const artifactCount = Object.values(state.equipment).filter(val => val !== null).length;
+        mult += stats.mult * artifactCount;
       }
       if (j.id === 'j_odd_todd') {
         const oddCount = selectedCards.filter(c => isOdd(c.rank)).length;
-        chips += stats.chips * oddCount;
+        chips += stats.tao * oddCount;
       }
       if (j.id === 'j_even_steven') {
         const evenCount = selectedCards.filter(c => isEven(c.rank)).length;
@@ -146,7 +149,7 @@ const App: React.FC = () => {
       xMult,
       total: Math.floor(chips * mult * xMult)
     };
-  }, [selectedCards, state.handLevels]);
+  }, [selectedCards, state.handLevels, state.equipment]);
 
   // Sync preview to state for Sidebar
   useEffect(() => {
@@ -170,14 +173,14 @@ const App: React.FC = () => {
   // Check for Win/Loss
   useEffect(() => {
     if (state.phase !== GamePhase.Gameplay) return;
-    if (state.score >= state.goal && !isRoundOver) {
+    if (state.tao >= state.goal && !isRoundOver) {
       setIsRoundOver('victory');
       audio.playVictory();
-    } else if (state.handsLeft === 0 && state.score < state.goal && !isRoundOver) {
+    } else if (state.handsLeft === 0 && state.tao < state.goal && !isRoundOver) {
       setIsRoundOver('defeat');
       audio.playDefeat();
     }
-  }, [state.score, state.goal, state.handsLeft, isRoundOver, state.phase]);
+  }, [state.tao, state.goal, state.handsLeft, isRoundOver, state.phase]);
 
   const handleToggleCard = useCallback((id: string) => {
     if (isRoundOver || state.phase !== GamePhase.Gameplay) return;
@@ -204,7 +207,7 @@ const App: React.FC = () => {
 
     setState(prev => ({
       ...prev,
-      score: prev.score + currentHandPreview.total,
+      tao: prev.tao + currentHandPreview.total,
       handsLeft: prev.handsLeft - 1,
       cards: SORT_CARDS_BY_RANK([...newCards, ...drawn]),
       deck: remainingDeck,
@@ -240,7 +243,7 @@ const App: React.FC = () => {
       setState(prev => ({
         ...prev,
         phase: GamePhase.Shop,
-        money: prev.money + 5 // Reward moved here so it's available in shop
+        spiritStones: prev.spiritStones + 5 // Reward moved here so it's available in shop
       }));
       setShopItems(GENERATE_SHOP_ITEMS());
     } else {
@@ -251,43 +254,43 @@ const App: React.FC = () => {
     setSelectedIds(new Set());
   };
 
-  const handleBuyJoker = (joker: Joker) => {
-    const isUpgrade = state.jokersData.some(j => j.id === joker.id);
+  const handleBuyJoker = (artifact: Joker) => {
+    const existing = state.equipment[artifact.slot];
 
-    if (state.money >= joker.price) {
+    if (state.spiritStones >= artifact.price) {
       audio.playCardSelect();
-      if (isUpgrade) {
-        setState(prev => ({
+
+      setState(prev => {
+        const newEquipment = { ...prev.equipment };
+
+        // Merge logic: Same ID (or name) and same level
+        if (existing && existing.id === artifact.id && existing.level === artifact.level) {
+          newEquipment[artifact.slot] = { ...existing, level: existing.level + 1 };
+        } else {
+          // Override logic: Replace existing or equip new
+          newEquipment[artifact.slot] = { ...artifact, level: 1 };
+        }
+
+        return {
           ...prev,
-          money: prev.money - joker.price,
-          jokersData: prev.jokersData.map(j =>
-            j.id === joker.id ? { ...j, level: j.level + 1 } : j
-          )
-        }));
-      } else if (state.jokersData.length < 5) {
-        setState(prev => ({
-          ...prev,
-          money: prev.money - joker.price,
-          jokers: [...prev.jokers, joker.id],
-          jokersData: [...prev.jokersData, { ...joker, level: 1 }]
-        }));
-      } else {
-        return; // No space for new joker
-      }
+          spiritStones: prev.spiritStones - artifact.price,
+          equipment: newEquipment
+        };
+      });
 
       setShopItems(prev => ({
         ...prev,
-        jokers: prev.jokers.filter(j => j.id !== joker.id)
+        jokers: prev.jokers.filter(j => j.id !== artifact.id)
       }));
     }
   };
 
   const handleBuyConsumable = (item: Consumable) => {
-    if (state.money >= item.price && state.consumables.length < 2) {
+    if (state.spiritStones >= item.price && state.consumables.length < 2) {
       audio.playCardSelect();
       setState(prev => ({
         ...prev,
-        money: prev.money - item.price,
+        spiritStones: prev.spiritStones - item.price,
         consumables: [...prev.consumables, item]
       }));
       setShopItems(prev => ({
@@ -332,27 +335,38 @@ const App: React.FC = () => {
 
   const handleStartNextGameplay = () => {
     audio.playPlayHand();
-    let nextRound = state.round + 1;
-    let nextAnte = state.ante;
-    let enteringStory = false;
+    const nextYear = state.year + 1;
 
-    if (nextRound > 3) {
-      nextRound = 1;
-      nextAnte += 1;
-      enteringStory = true;
+    if (nextYear > 99) {
+      // End game or something? For now just reset
+      setState(createInitialState());
+      return;
     }
+
+    const currentAnte = Math.floor((nextYear - 1) / 3) + 1;
+    const currentRound = ((nextYear - 1) % 3) + 1;
+    const enteringStory = (nextYear - 1) % 3 === 0;
 
     const fullDeck = GENERATE_DECK();
     const initialHand = SORT_CARDS_BY_RANK(fullDeck.slice(0, HAND_SIZE));
 
+    // Set Bonus Check
+    const allSlotsFilled = Object.values(state.equipment).every(v => v !== null);
+    let handsBonus = 4;
+    let discardsBonus = 3;
+    if (allSlotsFilled) {
+      if (Math.random() > 0.5) handsBonus++; else discardsBonus++;
+    }
+
     const nextState = {
-      round: nextRound,
-      ante: nextAnte,
-      goal: CALCULATE_GOAL(nextAnte, nextRound),
-      score: 0,
-      handsLeft: 4,
-      discardsLeft: 3,
-      currentBlind: GET_BLIND_NAME(nextRound),
+      year: nextYear,
+      ante: currentAnte,
+      round: currentRound,
+      goal: CALCULATE_GOAL(currentAnte, currentRound),
+      tao: 0,
+      handsLeft: handsBonus,
+      discardsLeft: discardsBonus,
+      currentBlind: GET_BLIND_NAME(currentRound),
       cards: initialHand,
       deck: fullDeck.slice(HAND_SIZE),
     };
@@ -360,9 +374,14 @@ const App: React.FC = () => {
     setState(prev => ({
       ...prev,
       ...nextState,
-      phase: enteringStory ? GamePhase.Story : GamePhase.Gameplay,
+      phase: enteringStory ? GamePhase.Shop : GamePhase.Gameplay, // Go to shop, then story if needed
       storyProgress: enteringStory ? prev.storyProgress + 1 : prev.storyProgress
     }));
+
+    // Trigger story if entering new Ante
+    if (enteringStory) {
+      setState(prev => ({ ...prev, phase: GamePhase.Story }));
+    }
   };
 
   const handleCompleteStory = () => {
@@ -394,8 +413,8 @@ const App: React.FC = () => {
         {/* Top Header */}
         <div className="p-12 pb-0 flex items-center gap-8">
           <div className="flex flex-col">
-            <span className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest italic">Ante (底注阶级)</span>
-            <span className="text-xl font-medium tracking-tight text-white">{state.ante} / 8</span>
+            <span className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest italic">Progress (修为年限)</span>
+            <span className="text-xl font-medium tracking-tight text-white">Years: {state.year} / 99</span>
           </div>
           <div className="h-8 w-px bg-zinc-800" />
           <div className="flex flex-col">
@@ -409,32 +428,41 @@ const App: React.FC = () => {
           </div>
 
           <div className="ml-auto flex gap-3">
-            {state.jokersData.map((j, i) => (
-              <div key={i} className={`px-4 py-2 bg-zinc-900 border border-white/5 rounded-xl flex flex-col items-start min-w-[120px] transition-all hover:bg-zinc-800
-                ${j.rarity === 'Legendary' ? 'shadow-[0_0_15px_rgba(234,179,8,0.2)]' : ''}
-              `}>
-                <div className="flex justify-between w-full items-center mb-1">
-                  <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded border
-                    ${j.rarity === 'Common' ? 'text-zinc-400 border-zinc-400/30' :
-                      j.rarity === 'Uncommon' ? 'text-green-400 border-green-400/30' :
-                        j.rarity === 'Rare' ? 'text-blue-400 border-blue-400/30' :
-                          'text-yellow-500 border-yellow-500/30'}
-                  `}>
-                    {j.rarity}
-                  </span>
-                  <span className="text-[9px] font-bold text-primary">Lv.{j.level}</span>
-                </div>
-                <span className="text-xs font-bold text-white mb-0.5">{j.name}</span>
-                <span className={`text-[10px] font-black uppercase tracking-tighter
-                  ${j.rarity === 'Common' ? 'text-zinc-500' :
-                    j.rarity === 'Uncommon' ? 'text-green-500/80' :
-                      j.rarity === 'Rare' ? 'text-blue-500/80' :
-                        'text-yellow-500/80'}
+            {(['Head', 'Hand', 'Leg', 'Body', 'Accessory'] as const).map((slot) => {
+              const artifact = state.equipment[slot];
+              return (
+                <div key={slot} className={`px-4 py-2 bg-zinc-900 border border-white/5 rounded-xl flex flex-col items-start min-w-[120px] transition-all hover:bg-zinc-800 relative
+                  ${artifact?.rarity === 'Legendary' ? 'shadow-[0_0_15px_rgba(234,179,8,0.2)]' : ''}
+                  ${!artifact ? 'opacity-20 translate-y-1' : ''}
                 `}>
-                  {GET_JOKER_EFFECT_DISPLAY(j)}
-                </span>
-              </div>
-            ))}
+                  <div className="flex justify-between w-full items-center mb-1">
+                    <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded border
+                      ${artifact?.rarity === 'Common' ? 'text-zinc-400 border-zinc-400/30' :
+                        artifact?.rarity === 'Uncommon' ? 'text-green-400 border-green-400/30' :
+                          artifact?.rarity === 'Rare' ? 'text-blue-400 border-blue-400/30' :
+                            artifact?.rarity === 'Legendary' ? 'text-yellow-500 border-yellow-500/30' : 'text-zinc-700 border-zinc-700/30'}
+                    `}>
+                      {artifact?.rarity || 'Empty'}
+                    </span>
+                    <span className="text-[9px] font-bold text-zinc-500">{slot}</span>
+                  </div>
+                  <span className="text-xs font-bold text-white mb-0.5">{artifact?.name || '---'}</span>
+                  {artifact && (
+                    <div className="flex justify-between w-full items-center">
+                      <span className={`text-[10px] font-black uppercase tracking-tighter
+                        ${artifact.rarity === 'Common' ? 'text-zinc-500' :
+                          artifact.rarity === 'Uncommon' ? 'text-green-500/80' :
+                            artifact.rarity === 'Rare' ? 'text-blue-500/80' :
+                              'text-yellow-500/80'}
+                      `}>
+                        {GET_JOKER_EFFECT_DISPLAY(artifact)}
+                      </span>
+                      <span className="text-[8px] font-bold text-primary ml-2">Lv.{artifact.level}</span>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
 
           {state.consumables.length > 0 && (
