@@ -495,8 +495,8 @@ const App: React.FC = () => {
                 </h2>
                 <div className="flex gap-12 mb-8">
                   <div className="text-center">
-                    <p className="text-xs text-zinc-500 uppercase font-bold mb-1">Final Score</p>
-                    <p className="text-4xl font-black text-white">{state.score.toLocaleString()}</p>
+                    <p className="text-xs text-zinc-500 uppercase font-bold mb-1">Final Tao</p>
+                    <p className="text-4xl font-black text-white">{state.tao.toLocaleString()}</p>
                   </div>
                   <div className="text-center">
                     <p className="text-xs text-zinc-500 uppercase font-bold mb-1">Goal</p>
