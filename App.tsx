@@ -26,9 +26,9 @@ const INITIAL_HAND_LEVELS: Record<PokerHand, number> = {
 const HAND_SIZE = 8;
 
 const GET_BLIND_NAME = (round: number) => {
-  if (round === 1) return "Small Blind (小盲注)";
-  if (round === 2) return "Big Blind (大盲注)";
-  return "Boss Blind (首领盲注)";
+  if (round === 1) return "Minor Tribulation (小雷劫)";
+  if (round === 2) return "Major Tribulation (大雷劫)";
+  return "Heavenly Doom (天劫)";
 };
 
 const createInitialState = (): GameState => {
