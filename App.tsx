@@ -137,7 +137,7 @@ const App: React.FC = () => {
       }
     });
 
-    if (state.jokersData.some(j => j.id === 'j_stuntman')) {
+    if (Object.values(state.equipment).some(j => j?.id === 'j_stuntman')) {
       // Hand size reduction is handled by not drawing more than limit, but for now we just apply stats
     }
 
