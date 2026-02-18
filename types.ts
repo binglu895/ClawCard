@@ -35,6 +35,7 @@ export interface Joker {
   id: string;
   name: string;
   rarity: 'Common' | 'Uncommon' | 'Rare' | 'Legendary';
+  level: number;
   effect: string;
   price: number;
   description: string;

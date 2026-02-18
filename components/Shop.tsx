@@ -1,6 +1,7 @@
 import React from 'react';
 import { GameState, Joker, Consumable } from '../types';
 import { audio } from '../AudioEngine';
+import { GET_JOKER_EFFECT_DISPLAY } from '../gameLogic';
 
 interface ShopProps {
     state: GameState;
@@ -41,38 +42,63 @@ export const Shop: React.FC<ShopProps> = ({ state, shopItems, onBuyJoker, onBuyC
                             Jokers (小丑牌)
                         </h2>
                         <div className="grid grid-cols-2 gap-6">
-                            {shopItems.jokers.map(joker => (
-                                <div
-                                    key={joker.id}
-                                    onClick={() => state.money >= joker.price && onBuyJoker(joker)}
-                                    className={`
-                    group relative p-6 bg-zinc-900/50 border border-white/5 rounded-3xl transition-all h-[240px] flex flex-col justify-between cursor-pointer
-                    ${state.money >= joker.price ? 'hover:border-primary/50 hover:bg-zinc-800/80 hover:-translate-y-2' : 'opacity-40 grayscale cursor-not-allowed'}
-                  `}
-                                >
-                                    <div>
-                                        <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded border mb-3 inline-block
-                      ${joker.rarity === 'Common' ? 'text-zinc-400 border-zinc-400' :
-                                                joker.rarity === 'Uncommon' ? 'text-primary border-primary' :
-                                                    'text-mult-red border-mult-red'}
-                    `}>
-                                            {joker.rarity}
-                                        </span>
-                                        <h3 className="text-xl font-bold text-white mb-2">{joker.name}</h3>
-                                        <p className="text-xs text-zinc-500 leading-relaxed">{joker.description}</p>
-                                    </div>
-                                    <div className="flex justify-between items-center mt-4">
-                                        <span className="text-mult-red font-bold text-sm tracking-tighter">{joker.effect}</span>
-                                        <span className="text-2xl font-black text-yellow-500 tabular-nums">${joker.price}</span>
-                                    </div>
+                            {shopItems.jokers.map(joker => {
+                                const isOwned = state.jokersData.some(j => j.id === joker.id);
+                                const currentLevel = state.jokersData.find(j => j.id === joker.id)?.level || 0;
+                                const displayEffect = GET_JOKER_EFFECT_DISPLAY(joker);
 
-                                    {state.money >= joker.price && (
-                                        <div className="absolute inset-0 bg-primary/20 opacity-0 group-hover:opacity-100 rounded-3xl transition-opacity flex items-center justify-center">
-                                            <span className="text-white font-black text-lg uppercase tracking-widest">BUY (购买)</span>
+                                return (
+                                    <div
+                                        key={joker.id}
+                                        onClick={() => state.money >= joker.price && onBuyJoker(joker)}
+                                        className={`
+                                            group relative p-6 bg-zinc-900/50 border border-white/5 rounded-3xl transition-all h-[260px] flex flex-col justify-between cursor-pointer
+                                            ${state.money >= joker.price ? 'hover:border-primary/50 hover:bg-zinc-800/80 hover:-translate-y-2' : 'opacity-40 grayscale cursor-not-allowed'}
+                                            ${isOwned ? 'ring-2 ring-primary/30 ring-inset' : ''}
+                                        `}
+                                    >
+                                        <div>
+                                            <div className="flex justify-between items-start mb-3">
+                                                <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded border
+                                                    ${joker.rarity === 'Common' ? 'text-zinc-400 border-zinc-400' :
+                                                        joker.rarity === 'Uncommon' ? 'text-green-400 border-green-400' :
+                                                            joker.rarity === 'Rare' ? 'text-blue-400 border-blue-400' :
+                                                                'text-yellow-500 border-yellow-500 shadow-[0_0_10px_rgba(234,179,8,0.4)]'}
+                                                `}>
+                                                    {joker.rarity}
+                                                </span>
+                                                {isOwned && (
+                                                    <span className="text-[10px] font-black text-primary uppercase bg-primary/10 px-2 py-0.5 rounded-full border border-primary/20">
+                                                        Lv.{currentLevel} → {currentLevel + 1}
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <h3 className="text-xl font-bold text-white mb-2">
+                                                {joker.name}
+                                                {isOwned && <span className="ml-2 text-primary text-xs uppercase font-black tracking-widest">[UPGRADE]</span>}
+                                            </h3>
+                                            <p className="text-xs text-zinc-500 leading-relaxed">{joker.description}</p>
                                         </div>
-                                    )}
-                                </div>
-                            ))}
+                                        <div className="flex justify-between items-center mt-4">
+                                            <span className={`font-bold text-sm tracking-tighter
+                                                ${joker.rarity === 'Common' ? 'text-zinc-400' :
+                                                    joker.rarity === 'Uncommon' ? 'text-green-400' :
+                                                        joker.rarity === 'Rare' ? 'text-blue-400' :
+                                                            'text-yellow-500'}
+                                            `}>
+                                                {displayEffect}
+                                            </span>
+                                            <span className="text-2xl font-black text-yellow-500 tabular-nums">${joker.price}</span>
+                                        </div>
+
+                                        {state.money >= joker.price && (
+                                            <div className="absolute inset-0 bg-primary/20 opacity-0 group-hover:opacity-100 rounded-3xl transition-opacity flex items-center justify-center backdrop-blur-[2px]">
+                                                <span className="text-white font-black text-lg uppercase tracking-widest">{isOwned ? 'UPGRADE (升级)' : 'BUY (购买)'}</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })}
                         </div>
                     </div>
 

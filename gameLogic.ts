@@ -141,13 +141,45 @@ export const CALCULATE_GOAL = (ante: number, round: number): number => {
 };
 
 export const JOKER_POOL: Joker[] = [
-    { id: 'j_joker', name: 'Joker (小丑)', rarity: 'Common', price: 4, effect: '+4 Mult', description: '提供 +4 倍率。' },
-    { id: 'j_greedy', name: 'Greedy Joker (贪婪小丑)', rarity: 'Common', price: 5, effect: 'Diamonds give +4 Mult', description: '方块牌提供 +4 倍率。' },
-    { id: 'j_lusty', name: 'Lusty Joker (好色小丑)', rarity: 'Common', price: 5, effect: 'Hearts give +4 Mult', description: '红桃牌提供 +4 倍率。' },
-    { id: 'j_wrathful', name: 'Wrathful Joker (愤怒小丑)', rarity: 'Common', price: 5, effect: 'Spades give +4 Mult', description: '黑桃牌提供 +4 倍率。' },
-    { id: 'j_gluttonous', name: 'Gluttonous Joker (贪食小丑)', rarity: 'Common', price: 5, effect: 'Clubs give +4 Mult', description: '梅花牌提供 +4 倍率。' },
-    { id: 'j_blue_joker', name: 'Blue Joker (蓝色小丑)', rarity: 'Uncommon', price: 6, effect: '+2 Chips for each card in deck', description: '牌组中每张牌提供 +2 筹码。' },
+    { id: 'j_joker', name: 'Joker (小丑)', rarity: 'Common', level: 1, price: 4, effect: '+4 Mult', description: '提供倍率加成。' },
+    { id: 'j_greedy', name: 'Greedy Joker (贪婪小丑)', rarity: 'Common', level: 1, price: 5, effect: 'Diamonds give +4 Mult', description: '方块牌提供倍率加成。' },
+    { id: 'j_lusty', name: 'Lusty Joker (好色小丑)', rarity: 'Common', level: 1, price: 5, effect: 'Hearts give +4 Mult', description: '红桃牌提供倍率加成。' },
+    { id: 'j_wrathful', name: 'Wrathful Joker (愤怒小丑)', rarity: 'Common', level: 1, price: 5, effect: 'Spades give +4 Mult', description: '黑桃牌提供倍率加成。' },
+    { id: 'j_gluttonous', name: 'Gluttonous Joker (贪食小丑)', rarity: 'Common', level: 1, price: 5, effect: 'Clubs give +4 Mult', description: '梅花牌提供倍率加成。' },
+    { id: 'j_blue_joker', name: 'Blue Joker (蓝色小丑)', rarity: 'Uncommon', level: 1, price: 6, effect: '+2 Chips for each card in deck', description: '根据牌组剩余牌量提供筹码。' },
 ];
+
+export const GET_JOKER_STATS = (joker: Joker): { chips: number, mult: number, xMult: number } => {
+    const stats = { chips: 0, mult: 0, xMult: 1 };
+    const levelScale = joker.level;
+
+    switch (joker.id) {
+        case 'j_joker':
+            stats.mult = 4 * levelScale;
+            break;
+        case 'j_greedy':
+        case 'j_lusty':
+        case 'j_wrathful':
+        case 'j_gluttonous':
+            stats.mult = 4 * levelScale;
+            break;
+        case 'j_blue_joker':
+            stats.chips = 2 * levelScale;
+            break;
+    }
+    return stats;
+};
+
+export const GET_JOKER_EFFECT_DISPLAY = (joker: Joker): string => {
+    const stats = GET_JOKER_STATS(joker);
+    if (stats.mult > 0) return `+${stats.mult} Mult`;
+    if (stats.chips > 0) {
+        if (joker.id === 'j_blue_joker') return `+${stats.chips} Chips per card`;
+        return `+${stats.chips} Chips`;
+    }
+    if (stats.xMult > 1) return `x${stats.xMult} Mult`;
+    return joker.effect;
+};
 
 export const CONSUMABLE_POOL: Consumable[] = [
     { id: 'c_jupiter', name: 'Jupiter (木星)', type: 'Planet', price: 3, effect: 'Level up Flush', description: '提升同花等级。' },

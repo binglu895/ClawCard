@@ -4,7 +4,7 @@ import { Card } from './components/Card';
 import { Shop } from './components/Shop';
 import { Story } from './components/Story';
 import { GameState, CardData, PokerHand, Enhancement, Edition, Seal, GamePhase, Joker, Consumable } from './types';
-import { EVALUATE_HAND, GET_HAND_STATS, CALCULATE_CARD_CHIPS, CALCULATE_CARD_MULT, CALCULATE_CARD_X_MULT, GENERATE_DECK, SORT_CARDS_BY_RANK, CALCULATE_GOAL, GENERATE_SHOP_ITEMS } from './gameLogic';
+import { EVALUATE_HAND, GET_HAND_STATS, CALCULATE_CARD_CHIPS, CALCULATE_CARD_MULT, CALCULATE_CARD_X_MULT, GENERATE_DECK, SORT_CARDS_BY_RANK, CALCULATE_GOAL, GENERATE_SHOP_ITEMS, GET_JOKER_STATS, GET_JOKER_EFFECT_DISPLAY } from './gameLogic';
 import { audio } from './AudioEngine';
 
 const INITIAL_HAND_LEVELS: Record<PokerHand, number> = {
@@ -86,7 +86,33 @@ const App: React.FC = () => {
 
     // Joker Bonuses
     state.jokersData.forEach(j => {
-      if (j.id === 'j_joker') mult += 4;
+      const stats = GET_JOKER_STATS(j);
+
+      // Apply base stats
+      chips += stats.chips;
+      mult += stats.mult;
+      xMult *= stats.xMult;
+
+      // Handle specific conditions
+      if (j.id === 'j_greedy') {
+        const diamonds = selectedCards.filter(c => c.suit === 'DIAMONDS').length;
+        mult += stats.mult * diamonds;
+      }
+      if (j.id === 'j_lusty') {
+        const hearts = selectedCards.filter(c => c.suit === 'HEARTS').length;
+        mult += stats.mult * hearts;
+      }
+      if (j.id === 'j_wrathful') {
+        const spades = selectedCards.filter(c => c.suit === 'SPADES').length;
+        mult += stats.mult * spades;
+      }
+      if (j.id === 'j_gluttonous') {
+        const clubs = selectedCards.filter(c => c.suit === 'CLUBS').length;
+        mult += stats.mult * clubs;
+      }
+      if (j.id === 'j_blue_joker') {
+        chips += stats.chips * state.deck.length;
+      }
     });
 
     return {
@@ -199,14 +225,29 @@ const App: React.FC = () => {
   };
 
   const handleBuyJoker = (joker: Joker) => {
-    if (state.money >= joker.price && state.jokersData.length < 5) {
+    const isUpgrade = state.jokersData.some(j => j.id === joker.id);
+
+    if (state.money >= joker.price) {
       audio.playCardSelect();
-      setState(prev => ({
-        ...prev,
-        money: prev.money - joker.price,
-        jokers: [...prev.jokers, joker.id],
-        jokersData: [...prev.jokersData, joker]
-      }));
+      if (isUpgrade) {
+        setState(prev => ({
+          ...prev,
+          money: prev.money - joker.price,
+          jokersData: prev.jokersData.map(j =>
+            j.id === joker.id ? { ...j, level: j.level + 1 } : j
+          )
+        }));
+      } else if (state.jokersData.length < 5) {
+        setState(prev => ({
+          ...prev,
+          money: prev.money - joker.price,
+          jokers: [...prev.jokers, joker.id],
+          jokersData: [...prev.jokersData, { ...joker, level: 1 }]
+        }));
+      } else {
+        return; // No space for new joker
+      }
+
       setShopItems(prev => ({
         ...prev,
         jokers: prev.jokers.filter(j => j.id !== joker.id)
@@ -307,11 +348,31 @@ const App: React.FC = () => {
             <span className="text-xl font-medium tracking-tight text-white">Lv. {currentHandPreview?.level || 1}</span>
           </div>
 
-          <div className="ml-auto flex gap-4">
+          <div className="ml-auto flex gap-3">
             {state.jokersData.map((j, i) => (
-              <div key={i} className="px-4 py-2 bg-zinc-900 border border-primary/30 rounded-lg flex flex-col items-center">
-                <span className="text-[8px] font-black text-primary uppercase">{j.rarity}</span>
-                <span className="text-xs font-bold text-white">{j.name}</span>
+              <div key={i} className={`px-4 py-2 bg-zinc-900 border border-white/5 rounded-xl flex flex-col items-start min-w-[120px] transition-all hover:bg-zinc-800
+                ${j.rarity === 'Legendary' ? 'shadow-[0_0_15px_rgba(234,179,8,0.2)]' : ''}
+              `}>
+                <div className="flex justify-between w-full items-center mb-1">
+                  <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded border
+                    ${j.rarity === 'Common' ? 'text-zinc-400 border-zinc-400/30' :
+                      j.rarity === 'Uncommon' ? 'text-green-400 border-green-400/30' :
+                        j.rarity === 'Rare' ? 'text-blue-400 border-blue-400/30' :
+                          'text-yellow-500 border-yellow-500/30'}
+                  `}>
+                    {j.rarity}
+                  </span>
+                  <span className="text-[9px] font-bold text-primary">Lv.{j.level}</span>
+                </div>
+                <span className="text-xs font-bold text-white mb-0.5">{j.name}</span>
+                <span className={`text-[10px] font-black uppercase tracking-tighter
+                  ${j.rarity === 'Common' ? 'text-zinc-500' :
+                    j.rarity === 'Uncommon' ? 'text-green-500/80' :
+                      j.rarity === 'Rare' ? 'text-blue-500/80' :
+                        'text-yellow-500/80'}
+                `}>
+                  {GET_JOKER_EFFECT_DISPLAY(j)}
+                </span>
               </div>
             ))}
           </div>
