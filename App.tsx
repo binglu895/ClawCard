@@ -1,8 +1,8 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { Card } from './components/Card';
 import { GameState, CardData, PokerHand, Enhancement, Edition, Seal } from './types';
-import { EVALUATE_HAND, GET_HAND_STATS, CALCULATE_CARD_CHIPS, CALCULATE_CARD_MULT, CALCULATE_CARD_X_MULT } from './gameLogic';
+import { EVALUATE_HAND, GET_HAND_STATS, CALCULATE_CARD_CHIPS, CALCULATE_CARD_MULT, CALCULATE_CARD_X_MULT, GENERATE_DECK } from './gameLogic';
 
 const INITIAL_HAND_LEVELS: Record<PokerHand, number> = {
   'High Card': 1,
@@ -18,33 +18,33 @@ const INITIAL_HAND_LEVELS: Record<PokerHand, number> = {
   'Royal Flush': 1,
 };
 
-const INITIAL_STATE: GameState = {
-  currentBlind: "Big Blind",
-  score: 0,
-  goal: 100000,
-  chips: 0,
-  mult: 0,
-  handsLeft: 4,
-  discardsLeft: 3,
-  money: 4,
-  pokerHand: "High Card",
-  level: 1,
-  handLevels: INITIAL_HAND_LEVELS,
-  cards: [
-    { id: '1', rank: 'A', suit: 'HEARTS', enhancement: Enhancement.None, edition: Edition.None, seal: Seal.None },
-    { id: '2', rank: 'K', suit: 'HEARTS', enhancement: Enhancement.None, edition: Edition.None, seal: Seal.None },
-    { id: '3', rank: '10', suit: 'SPADES', enhancement: Enhancement.None, edition: Edition.None, seal: Seal.None },
-    { id: '4', rank: '7', suit: 'DIAMONDS', enhancement: Enhancement.None, edition: Edition.None, seal: Seal.None },
-    { id: '5', rank: '2', suit: 'CLUBS', enhancement: Enhancement.None, edition: Edition.None, seal: Seal.None },
-    { id: '6', rank: 'A', suit: 'SPADES', enhancement: Enhancement.None, edition: Edition.None, seal: Seal.None },
-    { id: '7', rank: 'A', suit: 'DIAMONDS', enhancement: Enhancement.None, edition: Edition.None, seal: Seal.None },
-    { id: '8', rank: 'A', suit: 'CLUBS', enhancement: Enhancement.None, edition: Edition.None, seal: Seal.None },
-  ],
-  jokers: []
+const HAND_SIZE = 8;
+
+const createInitialState = (): GameState => {
+  const fullDeck = GENERATE_DECK();
+  const initialHand = fullDeck.slice(0, HAND_SIZE);
+  const remainingDeck = fullDeck.slice(HAND_SIZE);
+
+  return {
+    currentBlind: "Small Blind",
+    score: 0,
+    goal: 300,
+    chips: 0,
+    mult: 0,
+    handsLeft: 4,
+    discardsLeft: 3,
+    money: 4,
+    pokerHand: "High Card",
+    level: 1,
+    handLevels: INITIAL_HAND_LEVELS,
+    cards: initialHand,
+    deck: remainingDeck,
+    jokers: []
+  };
 };
 
 const App: React.FC = () => {
-  const [state, setState] = useState<GameState>(INITIAL_STATE);
+  const [state, setState] = useState<GameState>(createInitialState());
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   const selectedCards = useMemo(() =>
@@ -77,6 +77,25 @@ const App: React.FC = () => {
     };
   }, [selectedCards, state.handLevels]);
 
+  // Sync preview to state for Sidebar
+  useEffect(() => {
+    if (currentHandPreview) {
+      setState(prev => ({
+        ...prev,
+        chips: currentHandPreview.chips,
+        mult: currentHandPreview.mult,
+        pokerHand: currentHandPreview.hand
+      }));
+    } else {
+      setState(prev => ({
+        ...prev,
+        chips: 0,
+        mult: 0,
+        pokerHand: 'High Card'
+      }));
+    }
+  }, [currentHandPreview]);
+
   const handleToggleCard = useCallback((id: string) => {
     setSelectedIds(prev => {
       const next = new Set(prev);
@@ -89,19 +108,34 @@ const App: React.FC = () => {
   const handlePlayHand = () => {
     if (!currentHandPreview || state.handsLeft <= 0) return;
 
+    const newCards = state.cards.filter(c => !selectedIds.has(c.id));
+    const cardsNeeded = HAND_SIZE - newCards.length;
+    const drawn = state.deck.slice(0, cardsNeeded);
+    const remainingDeck = state.deck.slice(cardsNeeded);
+
     setState(prev => ({
       ...prev,
       score: prev.score + currentHandPreview.total,
       handsLeft: prev.handsLeft - 1,
+      cards: [...newCards, ...drawn],
+      deck: remainingDeck
     }));
     setSelectedIds(new Set());
   };
 
   const handleDiscard = () => {
     if (selectedIds.size === 0 || state.discardsLeft === 0) return;
+
+    const newCards = state.cards.filter(c => !selectedIds.has(c.id));
+    const cardsNeeded = HAND_SIZE - newCards.length;
+    const drawn = state.deck.slice(0, cardsNeeded);
+    const remainingDeck = state.deck.slice(cardsNeeded);
+
     setState(prev => ({
       ...prev,
-      discardsLeft: prev.discardsLeft - 1
+      discardsLeft: prev.discardsLeft - 1,
+      cards: [...newCards, ...drawn],
+      deck: remainingDeck
     }));
     setSelectedIds(new Set());
   };
@@ -185,13 +219,13 @@ const App: React.FC = () => {
 
           <div className="ml-auto flex items-center gap-6 bg-zinc-900/40 px-5 py-2.5 rounded-xl border border-zinc-800/50">
             <div className="flex flex-col items-end">
-              <span className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest">Hands Left</span>
-              <span className="text-lg font-bold text-white">{state.handsLeft}</span>
+              <span className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest">Deck</span>
+              <span className="text-lg font-bold text-zinc-400">{state.deck.length}</span>
             </div>
             <div className="h-8 w-px bg-zinc-800" />
             <div className="flex flex-col items-end">
-              <span className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest">Discards</span>
-              <span className="text-lg font-bold text-white">{state.discardsLeft}</span>
+              <span className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest">Money</span>
+              <span className="text-lg font-bold text-yellow-500">${state.money}</span>
             </div>
           </div>
         </footer>

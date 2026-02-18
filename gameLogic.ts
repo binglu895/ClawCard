@@ -1,4 +1,4 @@
-import { CardData, PokerHand, Enhancement, Edition, Seal } from './types';
+import { CardData, PokerHand, Enhancement, Edition, Seal, Suit } from './types';
 
 export const EVALUATE_HAND = (cards: CardData[]): PokerHand => {
     const counts: Record<string, number> = {};
@@ -87,4 +87,34 @@ export const CALCULATE_CARD_X_MULT = (card: CardData): number => {
     if (card.edition === Edition.Polychrome) xMult *= 1.5;
     if (card.enhancement === Enhancement.Glass) xMult *= 2;
     return xMult;
+};
+
+export const GENERATE_DECK = (): CardData[] => {
+    const suits: Suit[] = ['HEARTS', 'SPADES', 'DIAMONDS', 'CLUBS'];
+    const ranks = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
+    const deck: CardData[] = [];
+
+    suits.forEach(suit => {
+        ranks.forEach(rank => {
+            deck.push({
+                id: `${suit}-${rank}-${Math.random()}`,
+                rank,
+                suit,
+                enhancement: Enhancement.None,
+                edition: Edition.None,
+                seal: Seal.None,
+            });
+        });
+    });
+
+    return SHUFFLE_ARRAY(deck);
+};
+
+export const SHUFFLE_ARRAY = <T,>(array: T[]): T[] => {
+    const result = [...array];
+    for (let i = result.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [result[i], result[j]] = [result[j], result[i]];
+    }
+    return result;
 };
