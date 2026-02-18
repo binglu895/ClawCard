@@ -54,7 +54,9 @@ const createInitialState = (): GameState => {
     consumables: [],
     ante: 1,
     round: 1,
-    storyProgress: 0
+    storyProgress: 0,
+    planetsUsed: 0,
+    handPlayCounts: {}
   };
 };
 
@@ -87,11 +89,13 @@ const App: React.FC = () => {
     // Joker Bonuses
     state.jokersData.forEach(j => {
       const stats = GET_JOKER_STATS(j);
+      const isOdd = (rank: string) => ['A', '3', '5', '7', '9'].includes(rank);
+      const isEven = (rank: string) => ['2', '4', '6', '8', '10', 'Q'].includes(rank); // Simplified
 
       // Apply base stats
       chips += stats.chips;
       mult += stats.mult;
-      xMult *= stats.xMult;
+      xMult *= (j.id === 'j_constellation' ? (1 + stats.xMult * state.planetsUsed) : stats.xMult);
 
       // Handle specific conditions
       if (j.id === 'j_greedy') {
@@ -113,7 +117,26 @@ const App: React.FC = () => {
       if (j.id === 'j_blue_joker') {
         chips += stats.chips * state.deck.length;
       }
+      if (j.id === 'j_abstract') {
+        mult += stats.mult * state.jokersData.length;
+      }
+      if (j.id === 'j_odd_todd') {
+        const oddCount = selectedCards.filter(c => isOdd(c.rank)).length;
+        chips += stats.chips * oddCount;
+      }
+      if (j.id === 'j_even_steven') {
+        const evenCount = selectedCards.filter(c => isEven(c.rank)).length;
+        mult += stats.mult * evenCount;
+      }
+      if (j.id === 'j_supernova') {
+        const playCount = state.handPlayCounts[hand] || 0;
+        mult += stats.mult * playCount;
+      }
     });
+
+    if (state.jokersData.some(j => j.id === 'j_stuntman')) {
+      // Hand size reduction is handled by not drawing more than limit, but for now we just apply stats
+    }
 
     return {
       hand,
@@ -184,7 +207,11 @@ const App: React.FC = () => {
       score: prev.score + currentHandPreview.total,
       handsLeft: prev.handsLeft - 1,
       cards: SORT_CARDS_BY_RANK([...newCards, ...drawn]),
-      deck: remainingDeck
+      deck: remainingDeck,
+      handPlayCounts: {
+        ...prev.handPlayCounts,
+        [currentHandPreview.hand]: (prev.handPlayCounts[currentHandPreview.hand] || 0) + 1
+      }
     }));
     setSelectedIds(new Set());
   };
@@ -268,6 +295,39 @@ const App: React.FC = () => {
         consumables: prev.consumables.filter(c => c.id !== item.id)
       }));
     }
+  };
+
+  const handleUseConsumable = (consumable: Consumable) => {
+    audio.playPlayHand();
+    setState(prev => {
+      const newHandLevels = { ...prev.handLevels };
+      let planetsUsed = prev.planetsUsed;
+
+      if (consumable.type === 'Planet') {
+        planetsUsed++;
+        const handMap: Record<string, PokerHand> = {
+          'c_pluto': 'High Card',
+          'c_mercury': 'Pair',
+          'c_uranus': 'Two Pair',
+          'c_venus': 'Three of a Kind',
+          'c_saturn': 'Straight',
+          'c_jupiter': 'Flush',
+          'c_mars': 'Four of a Kind',
+          'c_neptune': 'Straight Flush'
+        };
+        const hand = handMap[consumable.id];
+        if (hand) {
+          newHandLevels[hand]++;
+        }
+      }
+
+      return {
+        ...prev,
+        handLevels: newHandLevels,
+        planetsUsed,
+        consumables: prev.consumables.filter(c => c.id !== consumable.id)
+      };
+    });
   };
 
   const handleStartNextGameplay = () => {
@@ -376,6 +436,24 @@ const App: React.FC = () => {
               </div>
             ))}
           </div>
+
+          {state.consumables.length > 0 && (
+            <div className="flex gap-2 ml-4 p-2 bg-zinc-900/50 rounded-2xl border border-white/5">
+              {state.consumables.map((c, i) => (
+                <div
+                  key={i}
+                  onClick={() => handleUseConsumable(c)}
+                  className={`
+                    px-4 py-2 rounded-xl border cursor-pointer hover:-translate-y-1 transition-all flex flex-col items-center min-w-[80px]
+                    ${c.type === 'Planet' ? 'border-primary/20 bg-primary/5 hover:bg-primary/20' : 'border-mult-red/20 bg-mult-red/5 hover:bg-mult-red/20'}
+                  `}
+                >
+                  <span className={`text-[8px] font-black uppercase mb-1 ${c.type === 'Planet' ? 'text-primary' : 'text-mult-red'}`}>{c.type}</span>
+                  <span className="text-[10px] font-bold text-white whitespace-nowrap">{c.name}</span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Center Game Field */}

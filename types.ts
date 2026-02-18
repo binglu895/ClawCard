@@ -77,4 +77,6 @@ export interface GameState {
   ante: number;
   round: number;
   storyProgress: number;
+  planetsUsed: number;
+  handPlayCounts: Record<string, number>;
 }

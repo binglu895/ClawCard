@@ -141,12 +141,18 @@ export const CALCULATE_GOAL = (ante: number, round: number): number => {
 };
 
 export const JOKER_POOL: Joker[] = [
-    { id: 'j_joker', name: 'Joker (小丑)', rarity: 'Common', level: 1, price: 4, effect: '+4 Mult', description: '提供倍率加成。' },
-    { id: 'j_greedy', name: 'Greedy Joker (贪婪小丑)', rarity: 'Common', level: 1, price: 5, effect: 'Diamonds give +4 Mult', description: '方块牌提供倍率加成。' },
-    { id: 'j_lusty', name: 'Lusty Joker (好色小丑)', rarity: 'Common', level: 1, price: 5, effect: 'Hearts give +4 Mult', description: '红桃牌提供倍率加成。' },
-    { id: 'j_wrathful', name: 'Wrathful Joker (愤怒小丑)', rarity: 'Common', level: 1, price: 5, effect: 'Spades give +4 Mult', description: '黑桃牌提供倍率加成。' },
-    { id: 'j_gluttonous', name: 'Gluttonous Joker (贪食小丑)', rarity: 'Common', level: 1, price: 5, effect: 'Clubs give +4 Mult', description: '梅花牌提供倍率加成。' },
-    { id: 'j_blue_joker', name: 'Blue Joker (蓝色小丑)', rarity: 'Uncommon', level: 1, price: 6, effect: '+2 Chips for each card in deck', description: '根据牌组剩余牌量提供筹码。' },
+    { id: 'j_joker', name: 'Joker (小丑)', rarity: 'Common', level: 1, price: 4, effect: '+4 Mult', description: '简单的倍率加成。' },
+    { id: 'j_greedy', name: 'Greedy Joker (贪婪小丑)', rarity: 'Common', level: 1, price: 5, effect: 'Diamonds give +4 Mult', description: '方块牌提供额外倍率。' },
+    { id: 'j_lusty', name: 'Lusty Joker (好色小丑)', rarity: 'Common', level: 1, price: 5, effect: 'Hearts give +4 Mult', description: '红桃牌提供额外倍率。' },
+    { id: 'j_wrathful', name: 'Wrathful Joker (愤怒小丑)', rarity: 'Common', level: 1, price: 5, effect: 'Spades give +4 Mult', description: '黑桃牌提供额外倍率。' },
+    { id: 'j_gluttonous', name: 'Gluttonous Joker (贪食小丑)', rarity: 'Common', level: 1, price: 5, effect: 'Clubs give +4 Mult', description: '梅花牌提供额外倍率。' },
+    { id: 'j_blue_joker', name: 'Blue Joker (蓝色小丑)', rarity: 'Uncommon', level: 1, price: 6, effect: '+2 Chips per card in deck', description: '根据牌组余量提供筹码。' },
+    { id: 'j_abstract', name: 'Abstract Joker (抽象小丑)', rarity: 'Common', level: 1, price: 4, effect: '+3 Mult per Joker', description: '每拥有一张小丑牌获得倍率。' },
+    { id: 'j_odd_todd', name: 'Odd Todd (奇数托德)', rarity: 'Common', level: 1, price: 5, effect: 'Odd cards give +30 Chips', description: '奇数点数牌提供加成。' },
+    { id: 'j_even_steven', name: 'Even Steven (偶数史蒂文)', rarity: 'Common', level: 1, price: 5, effect: 'Even cards give +4 Mult', description: '偶数点数牌提供加成。' },
+    { id: 'j_constellation', name: 'Constellation (星盘)', rarity: 'Uncommon', level: 1, price: 6, effect: 'Gain x0.1 Mult per Planet', description: '已消费行星牌提供全局倍率。' },
+    { id: 'j_stuntman', name: 'Stuntman (特技演员)', rarity: 'Rare', level: 1, price: 8, effect: '+250 Chips, -2 Hand Size', description: '巨大的筹码加成。' },
+    { id: 'j_supernova', name: 'Supernova (超新星)', rarity: 'Uncommon', level: 1, price: 6, effect: '+Mult based on hand use', description: '根据出牌频率叠加倍率。' },
 ];
 
 export const GET_JOKER_STATS = (joker: Joker): { chips: number, mult: number, xMult: number } => {
@@ -161,10 +167,26 @@ export const GET_JOKER_STATS = (joker: Joker): { chips: number, mult: number, xM
         case 'j_lusty':
         case 'j_wrathful':
         case 'j_gluttonous':
+        case 'j_even_steven':
             stats.mult = 4 * levelScale;
             break;
         case 'j_blue_joker':
             stats.chips = 2 * levelScale;
+            break;
+        case 'j_abstract':
+            stats.mult = 3 * levelScale;
+            break;
+        case 'j_odd_todd':
+            stats.chips = 30 * levelScale;
+            break;
+        case 'j_constellation':
+            stats.xMult = 0.1 * levelScale; // Added per planet
+            break;
+        case 'j_stuntman':
+            stats.chips = 250 * levelScale;
+            break;
+        case 'j_supernova':
+            stats.mult = 1 * levelScale; // Multiplied by hand play count
             break;
     }
     return stats;
@@ -172,20 +194,34 @@ export const GET_JOKER_STATS = (joker: Joker): { chips: number, mult: number, xM
 
 export const GET_JOKER_EFFECT_DISPLAY = (joker: Joker): string => {
     const stats = GET_JOKER_STATS(joker);
+    if (joker.id === 'j_constellation') return `x${(1 + stats.xMult).toFixed(1)} Mult / Planet`;
+    if (joker.id === 'j_abstract') return `+${stats.mult} Mult / Joker`;
+    if (joker.id === 'j_odd_todd') return `+${stats.chips} Chips (Odd)`;
+    if (joker.id === 'j_even_steven') return `+${stats.mult} Mult (Even)`;
+    if (joker.id === 'j_blue_joker') return `+${stats.chips} Chips / Card`;
+    if (joker.id === 'j_stuntman') return `+${stats.chips} Chips`;
+    if (joker.id === 'j_supernova') return `+${stats.mult} Mult / Hand Play`;
+
     if (stats.mult > 0) return `+${stats.mult} Mult`;
-    if (stats.chips > 0) {
-        if (joker.id === 'j_blue_joker') return `+${stats.chips} Chips per card`;
-        return `+${stats.chips} Chips`;
-    }
+    if (stats.chips > 0) return `+${stats.chips} Chips`;
     if (stats.xMult > 1) return `x${stats.xMult} Mult`;
     return joker.effect;
 };
 
 export const CONSUMABLE_POOL: Consumable[] = [
+    { id: 'c_pluto', name: 'Pluto (冥王星)', type: 'Planet', price: 3, effect: 'Level up High Card', description: '提升高牌等级。' },
+    { id: 'c_mercury', name: 'Mercury (水星)', type: 'Planet', price: 3, effect: 'Level up Pair', description: '提升对子等级。' },
+    { id: 'c_uranus', name: 'Uranus (天王星)', type: 'Planet', price: 3, effect: 'Level up Two Pair', description: '提升两对等级。' },
+    { id: 'c_venus', name: 'Venus (金星)', type: 'Planet', price: 3, effect: 'Level up Three of a Kind', description: '提升三条等级。' },
+    { id: 'c_saturn', name: 'Saturn (土星)', type: 'Planet', price: 3, effect: 'Level up Straight', description: '提升顺子等级。' },
     { id: 'c_jupiter', name: 'Jupiter (木星)', type: 'Planet', price: 3, effect: 'Level up Flush', description: '提升同花等级。' },
     { id: 'c_mars', name: 'Mars (火星)', type: 'Planet', price: 3, effect: 'Level up Four of a Kind', description: '提升四条等级。' },
+    { id: 'c_neptune', name: 'Neptune (海王星)', type: 'Planet', price: 3, effect: 'Level up Straight Flush', description: '提升同花顺等级。' },
     { id: 'c_the_fool', name: 'The Fool (愚者)', type: 'Tarot', price: 3, effect: 'Create last Tarot/Planet', description: '创建最后使用的塔罗牌或行星牌。' },
     { id: 'c_the_magician', name: 'The Magician (魔术师)', type: 'Tarot', price: 3, effect: 'Enhance 2 cards to Lucky', description: '将 2 张牌增强为幸运牌。' },
+    { id: 'c_the_empress', name: 'The Empress (女皇)', type: 'Tarot', price: 3, effect: 'Enhance 2 cards to Mult', description: '将 2 张牌增强为倍率牌。' },
+    { id: 'c_the_hierophant', name: 'The Hierophant (教皇)', type: 'Tarot', price: 3, effect: 'Enhance 2 cards to Bonus', description: '将 2 张牌增强为奖励牌。' },
+    { id: 'c_the_tower', name: 'The Tower (高塔)', type: 'Tarot', price: 3, effect: 'Enhance 1 card to Stone', description: '将 1 张牌增强为石头牌。' },
 ];
 
 export const GENERATE_SHOP_ITEMS = (): { jokers: Joker[], consumables: Consumable[] } => {
