@@ -9,62 +9,84 @@ export const Sidebar: React.FC<SidebarProps> = ({ state }) => {
   const progressPercent = state.goal > 0 ? Math.min((state.score / state.goal) * 100, 100) : 0;
 
   return (
-    <aside className="w-80 frosted-panel h-full flex flex-col p-8 z-10 shrink-0 border-r border-white/5">
+    <aside className="w-80 frosted-panel h-full flex flex-col p-8 z-10 shrink-0 border-r border-white/5 bg-[#0a0a0a]/80">
       <div className="mb-12">
         <div className="flex items-center gap-2 mb-1">
-          <span className="material-symbols-outlined text-primary text-sm">target</span>
-          <p className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold">Current Blind</p>
+          <span className="material-symbols-outlined text-primary text-sm">stars</span>
+          <p className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold">Current Run (当前进度)</p>
         </div>
-        <h2 className="text-2xl font-bold tracking-tight uppercase text-white">{state.currentBlind}</h2>
+        <h2 className="text-2xl font-bold tracking-tight uppercase text-white mb-6">{state.currentBlind}</h2>
 
-        <div className="mt-4 w-full bg-zinc-800/50 h-1.5 rounded-full overflow-hidden border border-white/5">
-          <div
-            className="bg-primary h-full transition-all duration-1000 shadow-[0_0_10px_rgba(37,140,244,0.5)]"
-            style={{ width: `${progressPercent}%` }}
-          />
-        </div>
-
-        <div className="flex justify-between mt-2 text-[10px] text-zinc-400 uppercase tracking-tight font-medium">
-          <span>Score: {state.score.toLocaleString()}</span>
-          <span>Goal: {state.goal.toLocaleString()}</span>
+        <div className="space-y-1">
+          <div className="flex justify-between items-end">
+            <span className="text-[10px] text-zinc-500 uppercase font-extrabold tracking-tighter">Score (当前分数)</span>
+            <span className="text-3xl font-black text-white tabular-nums drop-shadow-[0_0_8px_rgba(255,255,255,0.3)]">
+              {state.score.toLocaleString()}
+            </span>
+          </div>
+          <div className="w-full bg-zinc-800/50 h-3 rounded-full overflow-hidden border border-white/5 shadow-inner">
+            <div
+              className={`h-full transition-all duration-1000 ${state.score >= state.goal ? 'bg-primary' : 'bg-primary/50'} shadow-[0_0_15px_rgba(37,140,244,0.4)]`}
+              style={{ width: `${progressPercent}%` }}
+            />
+          </div>
+          <div className="flex justify-between items-start mt-1">
+            <span className="text-[10px] text-zinc-500 uppercase font-extrabold tracking-tighter">Goal (过关目标)</span>
+            <span className="text-lg font-bold text-zinc-400 tabular-nums">
+              {state.goal.toLocaleString()}
+            </span>
+          </div>
         </div>
       </div>
 
       <div className="flex-1 flex flex-col justify-center items-center gap-2">
-        <div className="text-center">
-          <p className="text-[10px] uppercase tracking-[0.3em] text-zinc-500 font-bold mb-1">Base Chips</p>
-          <h3 className="text-5xl font-bold text-primary neon-blue-glow tabular-nums transition-all">
+        <div className="text-center group">
+          <p className="text-[10px] uppercase tracking-[0.3em] text-zinc-500 font-bold mb-1 italic">Base Chips (基础筹码)</p>
+          <h3 className="text-6xl font-black text-primary neon-blue-glow tabular-nums transition-all group-hover:scale-110 duration-300">
             {state.chips.toLocaleString()}
           </h3>
         </div>
 
-        <div className="my-6">
-          <span className="material-symbols-outlined text-4xl text-zinc-700 font-light select-none">close</span>
+        <div className="my-4">
+          <span className="material-symbols-outlined text-4xl text-zinc-800 font-light select-none">close</span>
         </div>
 
-        <div className="text-center">
-          <p className="text-[10px] uppercase tracking-[0.3em] text-zinc-500 font-bold mb-1">Base Mult</p>
-          <h3 className="text-5xl font-bold text-mult-red neon-red-glow tabular-nums transition-all">
+        <div className="text-center group">
+          <p className="text-[10px] uppercase tracking-[0.3em] text-zinc-500 font-bold mb-1 italic">Base Mult (基础倍率)</p>
+          <h3 className="text-6xl font-black text-mult-red neon-red-glow tabular-nums transition-all group-hover:scale-110 duration-300">
             {state.mult}
           </h3>
         </div>
       </div>
 
-      <div className="mt-auto space-y-4">
-        <div className="flex justify-between items-end border-b border-zinc-800 pb-2">
-          <span className="text-[10px] text-zinc-500 uppercase font-bold">Hands Left</span>
-          <span className="text-xl font-bold tabular-nums text-white">{state.handsLeft.toString().padStart(2, '0')}</span>
-        </div>
-        <div className="flex justify-between items-end border-b border-zinc-800 pb-2">
-          <span className="text-[10px] text-zinc-500 uppercase font-bold">Discards</span>
-          <span className="text-xl font-bold tabular-nums text-white">{state.discardsLeft.toString().padStart(2, '0')}</span>
-        </div>
-        <div className="flex justify-between items-end">
-          <div className="flex items-center gap-1">
-            <span className="material-symbols-outlined text-yellow-500 text-xs">payments</span>
-            <span className="text-[10px] text-zinc-500 uppercase font-bold">Money</span>
+      <div className="mt-auto space-y-4 pt-8 border-t border-zinc-800/50">
+        <div className="flex justify-between items-center text-zinc-400">
+          <div className="flex flex-col">
+            <span className="text-[9px] uppercase font-bold tracking-widest text-zinc-600">Hands Left</span>
+            <span className="text-[10px] text-zinc-500">剩余出牌</span>
           </div>
-          <span className="text-xl font-bold text-yellow-500 tabular-nums">${state.money}</span>
+          <span className="text-3xl font-black tabular-nums text-white">{state.handsLeft}</span>
+        </div>
+
+        <div className="flex justify-between items-center text-zinc-400">
+          <div className="flex flex-col">
+            <span className="text-[9px] uppercase font-bold tracking-widest text-zinc-600">Discards Left</span>
+            <span className="text-[10px] text-zinc-500">剩余弃牌</span>
+          </div>
+          <span className="text-3xl font-black tabular-nums text-mult-red/80">{state.discardsLeft}</span>
+        </div>
+
+        <div className="flex justify-between items-center pt-2">
+          <div className="flex items-center gap-2">
+            <div className="p-1.5 bg-yellow-500/10 rounded-lg">
+              <span className="material-symbols-outlined text-yellow-500 text-sm">payments</span>
+            </div>
+            <div className="flex flex-col">
+              <span className="text-[9px] uppercase font-black text-yellow-500/80 tracking-widest">Money</span>
+              <span className="text-[10px] text-zinc-600">持有金钱</span>
+            </div>
+          </div>
+          <span className="text-3xl font-black text-yellow-500 tabular-nums">${state.money}</span>
         </div>
       </div>
     </aside>

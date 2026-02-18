@@ -118,3 +118,15 @@ export const SHUFFLE_ARRAY = <T,>(array: T[]): T[] => {
     }
     return result;
 };
+
+export const GET_RANK_VALUE = (rank: string): number => {
+    if (rank === 'A') return 14;
+    if (rank === 'K') return 13;
+    if (rank === 'Q') return 12;
+    if (rank === 'J') return 11;
+    return parseInt(rank);
+};
+
+export const SORT_CARDS_BY_RANK = (cards: CardData[]): CardData[] => {
+    return [...cards].sort((a, b) => GET_RANK_VALUE(b.rank) - GET_RANK_VALUE(a.rank));
+};
