@@ -7,9 +7,8 @@ import { MainMenu } from './components/MainMenu';
 import { EventOverlay } from './components/EventOverlay';
 import { EndingOverlay } from './components/EndingOverlay';
 import { GameState, CardData, PokerHand, Enhancement, Edition, Seal, GamePhase, Joker, Consumable, Choice } from './types';
-import { EVALUATE_HAND, GET_HAND_STATS, CALCULATE_CARD_CHIPS, CALCULATE_CARD_MULT, CALCULATE_CARD_X_MULT, GENERATE_DECK, SORT_CARDS_BY_RANK, CALCULATE_GOAL, GENERATE_SHOP_ITEMS, GET_JOKER_STATS, GET_JOKER_EFFECT_DISPLAY, CONSUMABLE_POOL, JOKER_POOL, GET_RANDOM_EVENT, GET_REALM_MULTIPLIER, CALCULATE_SET_BONUS, GET_ITEM_TIER, GET_ITEM_ICON, GET_LEVEL_COLOR } from './gameLogic';
+import { EVALUATE_HAND, GET_HAND_STATS, CALCULATE_CARD_CHIPS, CALCULATE_CARD_MULT, CALCULATE_CARD_X_MULT, GENERATE_DECK, SORT_CARDS_BY_RANK, CALCULATE_GOAL, GENERATE_SHOP_ITEMS, GET_JOKER_STATS, GET_JOKER_EFFECT_DISPLAY, CONSUMABLE_POOL, JOKER_POOL, GET_RANDOM_EVENT, GET_REALM_MULTIPLIER, CALCULATE_SET_BONUS, GET_ITEM_TIER } from './gameLogic';
 import { audio } from './AudioEngine';
-import { ItemTooltip } from './components/ItemTooltip';
 
 const INITIAL_HAND_LEVELS: Record<PokerHand, number> = {
   'High Card': 1,
@@ -816,32 +815,46 @@ const App: React.FC = () => {
               <div className="ml-auto flex gap-3">
                 {(['Head', 'Hand', 'Leg', 'Body', 'Accessory'] as const).map((slot) => {
                   const artifact = state.equipment[slot];
-                  if (!artifact) {
-                    return (
-                      <div key={slot} className="w-16 h-16 bg-zinc-900/50 border border-zinc-800 border-dashed rounded-lg flex flex-col items-center justify-center opacity-30">
-                        <span className="text-[8px] font-bold text-zinc-600 uppercase">{slot}</span>
-                      </div>
-                    );
-                  }
-
                   return (
-                    <ItemTooltip key={slot} item={artifact}>
-                      <div className="px-4 py-2 bg-zinc-900 border border-white/5 rounded-xl flex flex-col items-start min-w-[120px] transition-all hover:bg-zinc-800 relative">
-                        <div className="flex justify-between w-full items-center mb-1">
-                          <span className="text-[8px] font-black uppercase text-zinc-500">{slot}</span>
-                          <span className="text-[9px] font-bold text-primary">Lv.{artifact.level}</span>
-                        </div>
-                        <span className="text-xs font-bold text-white mb-0.5 whitespace-nowrap overflow-hidden text-ellipsis max-w-[100px]">{artifact.name}</span>
-                        <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded border leading-none
-                          ${artifact.rarity === 'Common' ? 'text-zinc-400 border-zinc-400/30' :
-                            artifact.rarity === 'Uncommon' ? 'text-green-400 border-green-400/30' :
-                              artifact.rarity === 'Rare' ? 'text-blue-400 border-blue-400/30' :
-                                artifact.rarity === 'Legendary' ? 'text-yellow-500 border-yellow-500/30' : 'text-zinc-700 border-zinc-700/30'}
+                    <div key={slot} className={`px-4 py-2 bg-zinc-900/40 border border-white/5 rounded-xl flex flex-col items-start min-w-[120px] transition-all relative overflow-hidden
+                      ${artifact?.rarity === 'Legendary' ? 'shadow-[0_0_15px_rgba(234,179,8,0.2)]' : ''}
+                      ${!artifact ? 'opacity-20' : ''}
+                    `}>
+                      <div className="flex justify-between w-full items-center mb-1">
+                        <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded border leading-none
+                          ${artifact?.rarity === 'Legendary' ? 'text-yellow-500 border-yellow-500/30' :
+                            artifact?.rarity === 'Rare' ? 'text-blue-400 border-blue-400/30' :
+                              artifact?.rarity === 'Uncommon' ? 'text-green-400 border-green-400/30' :
+                                'text-zinc-500 border-zinc-500/30'}
                         `}>
-                          {artifact.rarity}
+                          {artifact?.rarity || 'Empty'}
                         </span>
+                        <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">{slot}</span>
                       </div>
-                    </ItemTooltip>
+
+                      <div className="mb-2">
+                        <h4 className="text-xs font-black text-white uppercase tracking-tight truncate w-full">
+                          {artifact?.name || '---'}
+                        </h4>
+                        {artifact && (
+                          <span className="text-[10px] font-black text-primary">LV.{artifact.level}</span>
+                        )}
+                      </div>
+
+                      {artifact && (
+                        <div className="w-full pt-1.5 border-t border-white/5">
+                          <span className="text-[8px] text-zinc-500 font-bold uppercase tracking-widest block mb-0.5">Effect</span>
+                          <span className={`text-[10px] font-black uppercase tracking-tighter leading-tight
+                            ${artifact.rarity === 'Common' ? 'text-zinc-500' :
+                              artifact.rarity === 'Uncommon' ? 'text-green-500/80' :
+                                artifact.rarity === 'Rare' ? 'text-blue-500/80' :
+                                  'text-yellow-500/80'}
+                          `}>
+                            {GET_JOKER_EFFECT_DISPLAY(artifact)}
+                          </span>
+                        </div>
+                      )}
+                    </div>
                   );
                 })}
               </div>
@@ -849,18 +862,20 @@ const App: React.FC = () => {
               {state.consumables.length > 0 && (
                 <div className="flex gap-2 ml-4 p-2 bg-zinc-900/50 rounded-2xl border border-white/5">
                   {state.consumables.map((c, i) => (
-                    <ItemTooltip key={i} item={c}>
-                      <div
-                        onClick={() => handleUseConsumable(c)}
-                        className={`
-                        px-4 py-2 rounded-xl border cursor-pointer hover:-translate-y-1 transition-all flex flex-col items-center min-w-[80px]
-                        ${c.type === 'Planet' ? 'border-primary/20 bg-primary/5 hover:bg-primary/20' : 'border-mult-red/20 bg-mult-red/5 hover:bg-mult-red/20'}
+                    <div
+                      key={i}
+                      onClick={() => handleUseConsumable(c)}
+                      className={`
+                        px-4 py-2 rounded-xl border border-white/5 cursor-pointer hover:bg-zinc-800/80 transition-all flex flex-col items-start min-w-[100px]
+                        ${c.type === 'Planet' ? 'bg-primary/5 hover:border-primary/30' : 'bg-mult-red/5 hover:border-mult-red/30'}
                       `}
-                      >
-                        <span className={`text-[8px] font-black uppercase mb-1 ${c.type === 'Planet' ? 'text-primary' : 'text-mult-red'}`}>{c.type}</span>
-                        <span className="text-[10px] font-bold text-white whitespace-nowrap">{c.name}</span>
-                      </div>
-                    </ItemTooltip>
+                    >
+                      <span className={`text-[8px] font-black uppercase mb-0.5 ${c.type === 'Planet' ? 'text-primary' : 'text-mult-red'}`}>
+                        {c.type === 'Planet' ? 'Elixir' : 'Scroll'}
+                      </span>
+                      <span className="text-[10px] font-black text-white uppercase tracking-tight mb-1">{c.name}</span>
+                      <span className="text-[7px] text-zinc-500 font-bold uppercase tracking-widest leading-none line-clamp-1">{c.effect}</span>
+                    </div>
                   ))}
                 </div>
               )}

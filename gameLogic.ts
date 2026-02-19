@@ -282,37 +282,6 @@ export const GET_ITEM_TIER = (jokerId: string): number => {
     return mapping[code] || 0;
 };
 
-// 1. Level Color Mapping
-export const GET_LEVEL_COLOR = (level: number) => {
-    switch (level) {
-        case 1: return 'border-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.3)]'; // 橙金色
-        case 2: return 'border-purple-500 shadow-[0_0_10px_rgba(168,85,247,0.3)]'; // 紫色
-        case 3: return 'border-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.3)]';   // 蓝色
-        case 4: return 'border-green-500 shadow-[0_0_10px_rgba(34,197,94,0.3)]';  // 绿色 (Tier 5 only)
-        case 5: return 'border-white shadow-[0_0_15px_rgba(255,255,255,0.5)]';    // 白色 (Tier 5 only)
-        default: return 'border-zinc-700';
-    }
-};
-
-// 2. Icon Generation
-export const GET_ITEM_ICON = (slot: string, tier: number) => {
-    let iconName = 'help';
-    if (slot === 'Head') iconName = 'psychology';
-    if (slot === 'Hand') iconName = 'front_hand';
-    if (slot === 'Body') iconName = 'shield';
-    if (slot === 'Leg') iconName = 'directions_walk';
-    if (slot === 'Accessory') iconName = 'diamond';
-
-    let bgGradient = 'from-zinc-700 to-zinc-900';
-    if (tier === 1) bgGradient = 'from-emerald-800 to-zinc-900'; // 翠竹
-    if (tier === 2) bgGradient = 'from-zinc-600 to-black';       // 玄铁
-    if (tier === 3) bgGradient = 'from-cyan-800 to-zinc-900';    // 吐纳
-    if (tier === 4) bgGradient = 'from-indigo-800 to-zinc-900';  // 乾坤
-    if (tier === 5) bgGradient = 'from-rose-900 to-black';       // 无我
-
-    return { iconName, bgGradient };
-};
-
 export const CALCULATE_SET_BONUS = (equipment: Record<string, Joker | null>): { bonusHands: number, bonusDiscards: number, dominantTier: number, maxCount: number } => {
     const items = Object.values(equipment).filter((j): j is Joker => j !== null);
 
