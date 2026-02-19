@@ -355,17 +355,14 @@ const App: React.FC = () => {
       setState(prev => {
         const newEquipment = { ...prev.equipment };
 
-        // Merge logic: Same base ID and same level
-        // Use endsWith to ignore random shop prefixes (e.g. shop_abc_j_v_head -> j_v_head)
-        const isMatch = existing && artifact.id.endsWith(existing.id) && existing.level === artifact.level;
+        // 修复：商店已经在 Phase 11 去除了前缀，这里直接精准对比即可
+        const isMatch = existing && artifact.id === existing.id && existing.level === artifact.level;
 
         if (isMatch) {
           newEquipment[artifact.slot] = { ...existing, level: existing.level + 1 };
         } else {
-          // Override logic: Replace existing or equip new
-          // When equipping new, we strip the shop prefix to keep the ID clean in equipment state
-          const baseId = artifact.id.split('_').slice(2).join('_') || artifact.id;
-          newEquipment[artifact.slot] = { ...artifact, id: baseId, level: 1 };
+          // 修复：千万不要再 split 截断 ID 了！直接原样穿上
+          newEquipment[artifact.slot] = { ...artifact, level: 1 };
         }
 
         return {
