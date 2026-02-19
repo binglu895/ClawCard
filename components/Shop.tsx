@@ -1,7 +1,8 @@
 import React from 'react';
 import { GameState, Joker, Consumable } from '../types';
 import { audio } from '../AudioEngine';
-import { GET_JOKER_EFFECT_DISPLAY } from '../gameLogic';
+import { GET_JOKER_EFFECT_DISPLAY, GET_ITEM_TIER, GET_ITEM_ICON, GET_LEVEL_COLOR } from '../gameLogic';
+import { ItemTooltip } from './ItemTooltip';
 
 interface ShopProps {
     state: GameState;
@@ -78,59 +79,43 @@ export const Shop: React.FC<ShopProps> = ({ state, shopItems, onBuyJoker, onBuyC
                             const isMerge = equipped && artifact.id.endsWith(equipped.id) && equipped.level === artifact.level;
                             const displayEffect = GET_JOKER_EFFECT_DISPLAY(artifact);
 
-                            return (
-                                <div
-                                    key={artifact.id}
-                                    onClick={() => state.spiritStones >= artifact.price && onBuyJoker(artifact)}
-                                    className={`
-                                        group relative p-5 bg-zinc-900/40 border border-white/5 rounded-2xl transition-all flex flex-col justify-between cursor-pointer overflow-hidden
-                                        ${state.spiritStones >= artifact.price ? 'hover:border-primary/40 hover:bg-zinc-800/60' : 'opacity-30 grayscale cursor-not-allowed'}
-                                    `}
-                                >
-                                    <div>
-                                        <div className="flex justify-between items-start mb-2">
-                                            <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded border
-                                                ${artifact.rarity === 'Common' ? 'text-zinc-400 border-zinc-400/50' :
-                                                    artifact.rarity === 'Uncommon' ? 'text-green-400 border-green-400/50' :
-                                                        artifact.rarity === 'Rare' ? 'text-blue-400 border-blue-400/50' :
-                                                            'text-yellow-500 border-yellow-500/50 shadow-[0_0_5px_rgba(234,179,8,0.2)]'}
-                                            `}>
-                                                {artifact.rarity}
-                                            </span>
-                                            <span className="text-[8px] font-black text-primary uppercase bg-primary/5 px-1.5 py-0.5 rounded-md border border-primary/20">
-                                                {artifact.slot}
-                                            </span>
-                                        </div>
-                                        <h3 className="text-lg font-bold text-white mb-1 leading-tight">
-                                            {artifact.name}
-                                            {isMerge && <div className="text-primary text-[8px] uppercase font-black tracking-widest mt-0.5">[UPGRADE AVAILABLE]</div>}
-                                        </h3>
-                                        <p className="text-[10px] text-zinc-500 leading-normal line-clamp-3">{artifact.description}</p>
-                                    </div>
-                                    <div className="flex justify-between items-end mt-2">
-                                        <span className={`font-bold text-[10px] tracking-tight uppercase
-                                            ${artifact.rarity === 'Common' ? 'text-zinc-500' :
-                                                artifact.rarity === 'Uncommon' ? 'text-green-500' :
-                                                    artifact.rarity === 'Rare' ? 'text-blue-500' :
-                                                        'text-yellow-500'}
-                                        `}>
-                                            {displayEffect}
-                                        </span>
-                                        <div className="flex items-center gap-1">
-                                            <span className="text-[10px] font-bold text-yellow-500 opacity-50">$</span>
-                                            <span className="text-xl font-black text-yellow-500 tabular-nums">{artifact.price}</span>
-                                        </div>
-                                    </div>
+                            const { iconName, bgGradient } = GET_ITEM_ICON(artifact.slot, GET_ITEM_TIER(artifact.id));
+                            const borderClass = GET_LEVEL_COLOR(artifact.level || 1);
 
-                                    {state.spiritStones >= artifact.price && (
-                                        <div className="absolute inset-0 bg-primary/20 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center backdrop-blur-[1px]">
-                                            <span className="text-white font-black text-sm uppercase tracking-widest mb-1">
-                                                {isMerge ? 'MERGE (融合)' : equipped ? 'REPLACE (更替)' : 'EQUIP (炼化)'}
+                            return (
+                                <ItemTooltip key={artifact.id} item={artifact}>
+                                    <div
+                                        onClick={() => state.spiritStones >= artifact.price && onBuyJoker(artifact)}
+                                        className={`
+                                            group relative p-5 bg-zinc-900/40 border-2 ${borderClass} rounded-2xl transition-all flex flex-col items-center justify-center cursor-pointer overflow-hidden h-full
+                                            ${state.spiritStones >= artifact.price ? 'hover:scale-105' : 'opacity-30 grayscale cursor-not-allowed'}
+                                        `}
+                                    >
+                                        <div className={`w-20 h-20 rounded-xl bg-gradient-to-br ${bgGradient} flex items-center justify-center mb-4`}>
+                                            <span className="material-symbols-outlined text-5xl text-white/70">
+                                                {iconName}
                                             </span>
-                                            {isMerge && <span className="text-primary-light text-[8px] font-bold uppercase animate-pulse">Lv.{artifact.level} → {artifact.level + 1}</span>}
                                         </div>
-                                    )}
-                                </div>
+
+                                        <div className="text-center">
+                                            <h3 className="text-sm font-bold text-white mb-1 leading-tight tracking-wide uppercase">
+                                                {artifact.name}
+                                            </h3>
+                                            <div className="flex items-center justify-center gap-1.5">
+                                                <span className="text-[10px] font-bold text-yellow-500">$</span>
+                                                <span className="text-lg font-black text-yellow-500 tabular-nums">{artifact.price}</span>
+                                            </div>
+                                        </div>
+
+                                        {state.spiritStones >= artifact.price && (
+                                            <div className="absolute inset-0 bg-primary/20 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center backdrop-blur-[1px]">
+                                                <span className="text-white font-black text-[10px] uppercase tracking-widest">
+                                                    {isMerge ? 'MERGE (融合)' : equipped ? 'REPLACE (更替)' : 'EQUIP (炼化)'}
+                                                </span>
+                                            </div>
+                                        )}
+                                    </div>
+                                </ItemTooltip>
                             );
                         } else {
                             const consumable = item as Consumable;

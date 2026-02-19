@@ -7,8 +7,9 @@ import { MainMenu } from './components/MainMenu';
 import { EventOverlay } from './components/EventOverlay';
 import { EndingOverlay } from './components/EndingOverlay';
 import { GameState, CardData, PokerHand, Enhancement, Edition, Seal, GamePhase, Joker, Consumable, Choice } from './types';
-import { EVALUATE_HAND, GET_HAND_STATS, CALCULATE_CARD_CHIPS, CALCULATE_CARD_MULT, CALCULATE_CARD_X_MULT, GENERATE_DECK, SORT_CARDS_BY_RANK, CALCULATE_GOAL, GENERATE_SHOP_ITEMS, GET_JOKER_STATS, GET_JOKER_EFFECT_DISPLAY, CONSUMABLE_POOL, JOKER_POOL, GET_RANDOM_EVENT, GET_REALM_MULTIPLIER, CALCULATE_SET_BONUS } from './gameLogic';
+import { EVALUATE_HAND, GET_HAND_STATS, CALCULATE_CARD_CHIPS, CALCULATE_CARD_MULT, CALCULATE_CARD_X_MULT, GENERATE_DECK, SORT_CARDS_BY_RANK, CALCULATE_GOAL, GENERATE_SHOP_ITEMS, GET_JOKER_STATS, GET_JOKER_EFFECT_DISPLAY, CONSUMABLE_POOL, JOKER_POOL, GET_RANDOM_EVENT, GET_REALM_MULTIPLIER, CALCULATE_SET_BONUS, GET_ITEM_TIER, GET_ITEM_ICON, GET_LEVEL_COLOR } from './gameLogic';
 import { audio } from './AudioEngine';
+import { ItemTooltip } from './components/ItemTooltip';
 
 const INITIAL_HAND_LEVELS: Record<PokerHand, number> = {
   'High Card': 1,
@@ -357,9 +358,16 @@ const App: React.FC = () => {
 
         // 修复：商店已经在 Phase 11 去除了前缀，这里直接精准对比即可
         const isMatch = existing && artifact.id === existing.id && existing.level === artifact.level;
+        const tier = GET_ITEM_TIER(artifact.id);
+        const maxLevel = tier === 5 ? 5 : 3;
 
         if (isMatch) {
-          newEquipment[artifact.slot] = { ...existing, level: existing.level + 1 };
+          if (existing.level < maxLevel) {
+            newEquipment[artifact.slot] = { ...existing, level: existing.level + 1 };
+          } else {
+            // Already max level
+            return prev;
+          }
         } else {
           // 修复：千万不要再 split 截断 ID 了！直接原样穿上
           newEquipment[artifact.slot] = { ...artifact, level: 1 };
