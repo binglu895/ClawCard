@@ -79,37 +79,34 @@ export const Shop: React.FC<ShopProps> = ({ state, shopItems, onBuyJoker, onBuyC
                             const isMerge = equipped && artifact.id.endsWith(equipped.id) && equipped.level === artifact.level;
                             const displayEffect = GET_JOKER_EFFECT_DISPLAY(artifact);
 
-                            const { iconName, bgGradient } = GET_ITEM_ICON(artifact.slot, GET_ITEM_TIER(artifact.id));
-                            const borderClass = GET_LEVEL_COLOR(artifact.level || 1);
-
                             return (
                                 <ItemTooltip key={artifact.id} item={artifact}>
                                     <div
                                         onClick={() => state.spiritStones >= artifact.price && onBuyJoker(artifact)}
                                         className={`
-                                            group relative p-5 bg-zinc-900/40 border-2 ${borderClass} rounded-2xl transition-all flex flex-col items-center justify-center cursor-pointer h-full
-                                            ${state.spiritStones >= artifact.price ? 'hover:scale-105' : 'opacity-30 grayscale cursor-not-allowed'}
+                                            group relative p-5 bg-zinc-900 border border-white/5 rounded-2xl transition-all flex flex-col justify-between cursor-pointer h-full
+                                            ${state.spiritStones >= artifact.price ? 'hover:bg-zinc-800' : 'opacity-30 grayscale cursor-not-allowed'}
                                         `}
                                     >
-                                        <div className={`w-20 h-20 rounded-xl bg-gradient-to-br ${bgGradient} flex items-center justify-center mb-4`}>
-                                            <span className="material-symbols-outlined text-5xl text-white/70">
-                                                {iconName}
-                                            </span>
+                                        <div>
+                                            <div className="flex justify-between items-start mb-2">
+                                                <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">{artifact.slot}</span>
+                                                <span className="text-xs font-black text-primary">Lv.{artifact.level}</span>
+                                            </div>
+                                            <h3 className="text-lg font-bold text-white mb-1 leading-tight">{artifact.name}</h3>
+                                            <p className="text-[10px] text-zinc-500 leading-normal line-clamp-3">{artifact.description}</p>
                                         </div>
 
-                                        <div className="text-center">
-                                            <h3 className="text-sm font-bold text-white mb-1 leading-tight tracking-wide uppercase">
-                                                {artifact.name}
-                                            </h3>
-                                            <div className="flex items-center justify-center gap-1.5">
+                                        <div className="mt-4 flex justify-between items-center">
+                                            <div className="flex items-center gap-1">
                                                 <span className="text-[10px] font-bold text-yellow-500">$</span>
-                                                <span className="text-lg font-black text-yellow-500 tabular-nums">{artifact.price}</span>
+                                                <span className="text-xl font-black text-yellow-500 tabular-nums">{artifact.price}</span>
                                             </div>
                                         </div>
 
                                         {state.spiritStones >= artifact.price && (
                                             <div className="absolute inset-0 bg-primary/20 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center backdrop-blur-[1px] rounded-2xl pointer-events-none">
-                                                <span className="text-white font-black text-[10px] uppercase tracking-widest">
+                                                <span className="text-white font-black text-sm uppercase tracking-widest drop-shadow-md">
                                                     {isMerge ? 'MERGE (融合)' : equipped ? 'REPLACE (更替)' : 'EQUIP (炼化)'}
                                                 </span>
                                             </div>
@@ -127,8 +124,8 @@ export const Shop: React.FC<ShopProps> = ({ state, shopItems, onBuyJoker, onBuyC
                                     <div
                                         onClick={() => canBuy && onBuyConsumable(consumable)}
                                         className={`
-                                            group relative p-5 bg-zinc-900/40 border border-white/5 rounded-2xl transition-all flex flex-col justify-between cursor-pointer h-full
-                                            ${canBuy ? 'hover:border-mult-red/40 hover:bg-zinc-800/60' : 'opacity-30 grayscale cursor-not-allowed'}
+                                            group relative p-5 bg-zinc-900 border border-white/5 rounded-2xl transition-all flex flex-col justify-between cursor-pointer h-full
+                                            ${canBuy ? 'hover:bg-zinc-800' : 'opacity-30 grayscale cursor-not-allowed'}
                                         `}
                                     >
                                         <div>
@@ -140,10 +137,9 @@ export const Shop: React.FC<ShopProps> = ({ state, shopItems, onBuyJoker, onBuyC
                                             <h3 className="text-lg font-bold text-white mb-1 leading-tight">{consumable.name}</h3>
                                             <p className="text-[10px] text-zinc-500 leading-normal line-clamp-3">{consumable.description}</p>
                                         </div>
-                                        <div className="flex justify-between items-end mt-2">
-                                            <span className="text-zinc-500 text-[10px] font-medium uppercase tracking-tighter">{consumable.effect}</span>
+                                        <div className="flex justify-between items-center mt-4">
                                             <div className="flex items-center gap-1">
-                                                <span className="text-[10px] font-bold text-yellow-500 opacity-50">$</span>
+                                                <span className="text-[10px] font-bold text-yellow-500">$</span>
                                                 <span className="text-xl font-black text-yellow-500 tabular-nums">{consumable.price}</span>
                                             </div>
                                         </div>

@@ -816,37 +816,32 @@ const App: React.FC = () => {
               <div className="ml-auto flex gap-3">
                 {(['Head', 'Hand', 'Leg', 'Body', 'Accessory'] as const).map((slot) => {
                   const artifact = state.equipment[slot];
-                  return (
-                    <div key={slot} className={`px-4 py-2 bg-zinc-900 border border-white/5 rounded-xl flex flex-col items-start min-w-[120px] transition-all hover:bg-zinc-800 relative
-                  ${artifact?.rarity === 'Legendary' ? 'shadow-[0_0_15px_rgba(234,179,8,0.2)]' : ''}
-                  ${!artifact ? 'opacity-20 translate-y-1' : ''}
-                `}>
-                      <div className="flex justify-between w-full items-center mb-1">
-                        <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded border
-                      ${artifact?.rarity === 'Common' ? 'text-zinc-400 border-zinc-400/30' :
-                            artifact?.rarity === 'Uncommon' ? 'text-green-400 border-green-400/30' :
-                              artifact?.rarity === 'Rare' ? 'text-blue-400 border-blue-400/30' :
-                                artifact?.rarity === 'Legendary' ? 'text-yellow-500 border-yellow-500/30' : 'text-zinc-700 border-zinc-700/30'}
-                    `}>
-                          {artifact?.rarity || 'Empty'}
-                        </span>
-                        <span className="text-[9px] font-bold text-zinc-500">{slot}</span>
+                  if (!artifact) {
+                    return (
+                      <div key={slot} className="w-16 h-16 bg-zinc-900/50 border border-zinc-800 border-dashed rounded-lg flex flex-col items-center justify-center opacity-30">
+                        <span className="text-[8px] font-bold text-zinc-600 uppercase">{slot}</span>
                       </div>
-                      <span className="text-xs font-bold text-white mb-0.5">{artifact?.name || '---'}</span>
-                      {artifact && (
-                        <div className="flex justify-between w-full items-center">
-                          <span className={`text-[10px] font-black uppercase tracking-tighter
-                        ${artifact.rarity === 'Common' ? 'text-zinc-500' :
-                              artifact.rarity === 'Uncommon' ? 'text-green-500/80' :
-                                artifact.rarity === 'Rare' ? 'text-blue-500/80' :
-                                  'text-yellow-500/80'}
-                      `}>
-                            {GET_JOKER_EFFECT_DISPLAY(artifact)}
-                          </span>
-                          <span className="text-[8px] font-bold text-primary ml-2">Lv.{artifact.level}</span>
+                    );
+                  }
+
+                  return (
+                    <ItemTooltip key={slot} item={artifact}>
+                      <div className="px-4 py-2 bg-zinc-900 border border-white/5 rounded-xl flex flex-col items-start min-w-[120px] transition-all hover:bg-zinc-800 relative">
+                        <div className="flex justify-between w-full items-center mb-1">
+                          <span className="text-[8px] font-black uppercase text-zinc-500">{slot}</span>
+                          <span className="text-[9px] font-bold text-primary">Lv.{artifact.level}</span>
                         </div>
-                      )}
-                    </div>
+                        <span className="text-xs font-bold text-white mb-0.5 whitespace-nowrap overflow-hidden text-ellipsis max-w-[100px]">{artifact.name}</span>
+                        <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded border leading-none
+                          ${artifact.rarity === 'Common' ? 'text-zinc-400 border-zinc-400/30' :
+                            artifact.rarity === 'Uncommon' ? 'text-green-400 border-green-400/30' :
+                              artifact.rarity === 'Rare' ? 'text-blue-400 border-blue-400/30' :
+                                artifact.rarity === 'Legendary' ? 'text-yellow-500 border-yellow-500/30' : 'text-zinc-700 border-zinc-700/30'}
+                        `}>
+                          {artifact.rarity}
+                        </span>
+                      </div>
+                    </ItemTooltip>
                   );
                 })}
               </div>
@@ -969,8 +964,9 @@ const App: React.FC = () => {
             </footer>
           </main>
         </>
-      )}
-    </div>
+      )
+      }
+    </div >
   );
 };
 
