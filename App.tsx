@@ -854,17 +854,18 @@ const App: React.FC = () => {
               {state.consumables.length > 0 && (
                 <div className="flex gap-2 ml-4 p-2 bg-zinc-900/50 rounded-2xl border border-white/5">
                   {state.consumables.map((c, i) => (
-                    <div
-                      key={i}
-                      onClick={() => handleUseConsumable(c)}
-                      className={`
-                    px-4 py-2 rounded-xl border cursor-pointer hover:-translate-y-1 transition-all flex flex-col items-center min-w-[80px]
-                    ${c.type === 'Planet' ? 'border-primary/20 bg-primary/5 hover:bg-primary/20' : 'border-mult-red/20 bg-mult-red/5 hover:bg-mult-red/20'}
-                  `}
-                    >
-                      <span className={`text-[8px] font-black uppercase mb-1 ${c.type === 'Planet' ? 'text-primary' : 'text-mult-red'}`}>{c.type}</span>
-                      <span className="text-[10px] font-bold text-white whitespace-nowrap">{c.name}</span>
-                    </div>
+                    <ItemTooltip key={i} item={c}>
+                      <div
+                        onClick={() => handleUseConsumable(c)}
+                        className={`
+                        px-4 py-2 rounded-xl border cursor-pointer hover:-translate-y-1 transition-all flex flex-col items-center min-w-[80px]
+                        ${c.type === 'Planet' ? 'border-primary/20 bg-primary/5 hover:bg-primary/20' : 'border-mult-red/20 bg-mult-red/5 hover:bg-mult-red/20'}
+                      `}
+                      >
+                        <span className={`text-[8px] font-black uppercase mb-1 ${c.type === 'Planet' ? 'text-primary' : 'text-mult-red'}`}>{c.type}</span>
+                        <span className="text-[10px] font-bold text-white whitespace-nowrap">{c.name}</span>
+                      </div>
+                    </ItemTooltip>
                   ))}
                 </div>
               )}
