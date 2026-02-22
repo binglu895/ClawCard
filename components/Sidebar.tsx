@@ -13,7 +13,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ state, onPlayHand, onDiscard, 
   const progressPercent = state.goal > 0 ? Math.min((state.tao / state.goal) * 100, 100) : 0;
 
   return (
-    <aside className="w-full md:w-80 [@media(max-height:500px)]:w-full frosted-panel h-auto md:h-full flex flex-row md:flex-col p-2 sm:p-4 sm:p-8 z-10 shrink-0 border-b md:border-b-0 md:border-r border-white/5 bg-[#0a0a0a]/80 overflow-x-auto md:overflow-y-auto scrollbar-hide">
+    <aside className="hidden md:flex w-80 frosted-panel h-full flex-col p-8 z-10 shrink-0 border-r border-white/5 bg-[#0a0a0a]/80">
       <div className="mb-4 md:mb-12 [@media(max-height:500px)]:mb-0 flex-shrink-0">
         <div className="flex items-center gap-2 mb-1 [@media(max-height:500px)]:hidden">
           <span className="material-symbols-outlined text-primary text-sm">temple_buddhist</span>

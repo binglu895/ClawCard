@@ -743,7 +743,39 @@ const App: React.FC = () => {
         <>
           <Sidebar state={state} />
 
-          <main className="flex-1 flex flex-col relative">
+          <main className="flex-1 flex flex-col relative w-full overflow-x-hidden">
+            {/* Mobile-only Stats Bar */}
+            <div className="flex md:hidden flex-col w-full bg-[#0d0d0d] border-b border-white/5 p-3 z-30">
+              <div className="flex justify-between items-center mb-2">
+                <div className="flex flex-col">
+                  <span className="text-[8px] text-zinc-500 uppercase font-black">Tao / Goal</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-black text-white">{state.tao.toLocaleString()}</span>
+                    <span className="text-[10px] text-zinc-600">/ {state.goal.toLocaleString()}</span>
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <div className="flex flex-col items-center">
+                    <span className="text-[8px] text-zinc-500 font-bold">PLAYS</span>
+                    <span className="text-sm font-black text-white">{state.handsLeft}</span>
+                  </div>
+                  <div className="flex flex-col items-center">
+                    <span className="text-[8px] text-zinc-500 font-bold text-mult-red">DISC</span>
+                    <span className="text-sm font-black text-mult-red">{state.discardsLeft}</span>
+                  </div>
+                  <div className="flex flex-col items-center">
+                    <span className="text-[8px] text-yellow-500 font-bold">STONES</span>
+                    <span className="text-sm font-black text-yellow-500">${state.spiritStones}</span>
+                  </div>
+                </div>
+              </div>
+              <div className="w-full bg-zinc-800/50 h-1 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-primary transition-all duration-500"
+                  style={{ width: `${Math.min((state.tao / (state.goal || 1)) * 100, 100)}%` }}
+                />
+              </div>
+            </div>
             {/* Top Header - Add Save/Load Buttons Here */}
             <div className="absolute top-2 sm:top-6 right-2 sm:right-12 z-50 flex gap-2 sm:gap-4">
               <button
@@ -796,20 +828,32 @@ const App: React.FC = () => {
             )}
 
             {/* Top Header */}
-            <div className="p-2 sm:p-4 lg:p-12 pb-0 flex flex-col lg:flex-row items-center lg:items-center gap-2 sm:gap-4 lg:gap-8 shrink-0">
-              <div className="flex flex-col">
-                <span className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest italic">Progress (修为年限)</span>
-                <span className="text-xl font-medium tracking-tight text-white">Years: {state.year} / 99</span>
+            <div className="p-2 sm:p-4 lg:p-12 pb-0 flex flex-wrap lg:flex-nowrap items-center justify-center lg:justify-start gap-3 sm:gap-4 lg:gap-8 shrink-0">
+              <div className="flex flex-col items-center lg:items-start shrink-0">
+                <span className="text-[8px] sm:text-[10px] text-zinc-500 uppercase font-bold tracking-widest italic leading-none mb-0.5">Progress (修为年限)</span>
+                <span className="text-sm sm:text-lg lg:text-xl font-medium tracking-tight text-white">Years: {state.year} / 99</span>
               </div>
-              <div className="h-8 w-px bg-zinc-800" />
-              <div className="flex flex-col">
-                <span className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest italic">Current Hand (当前牌型)</span>
-                <span className="text-xl font-medium tracking-tight text-white">{currentHandPreview?.hand || "Select Cards"}</span>
+              <div className="hidden sm:block h-6 sm:h-8 w-px bg-zinc-800 shrink-0" />
+              <div className="flex flex-col items-center lg:items-start shrink-0">
+                <span className="text-[8px] sm:text-[10px] text-zinc-500 uppercase font-bold tracking-widest italic leading-none mb-0.5">Current Hand (当前牌型)</span>
+                <span className="text-sm sm:text-lg lg:text-xl font-medium tracking-tight text-white">{currentHandPreview?.hand || "Select Cards"}</span>
               </div>
-              <div className="h-8 w-px bg-zinc-800" />
-              <div className="flex flex-col">
-                <span className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest italic">Level (等级)</span>
-                <span className="text-xl font-medium tracking-tight text-white">Lv. {currentHandPreview?.level || 1}</span>
+              <div className="hidden sm:block h-6 sm:h-8 w-px bg-zinc-800 shrink-0" />
+              <div className="flex flex-col items-center lg:items-start shrink-0">
+                <span className="text-[8px] sm:text-[10px] text-zinc-500 uppercase font-bold tracking-widest italic leading-none mb-0.5">Level (等级)</span>
+                <span className="text-sm sm:text-lg lg:text-xl font-medium tracking-tight text-white">Lv. {currentHandPreview?.level || 1}</span>
+              </div>
+
+              {/* Mobile-only Base Stats */}
+              <div className="flex md:hidden gap-3 border-l border-zinc-800 pl-3 ml-1">
+                <div className="flex flex-col items-center">
+                  <span className="text-[8px] text-primary font-bold">CHIPS</span>
+                  <span className="text-sm font-black text-primary">{state.chips}</span>
+                </div>
+                <div className="flex flex-col items-center">
+                  <span className="text-[8px] text-mult-red font-bold">MULT</span>
+                  <span className="text-sm font-black text-mult-red">{state.mult}</span>
+                </div>
               </div>
 
               <div className="lg:ml-auto flex gap-2 sm:gap-3 overflow-x-auto w-full lg:w-auto pb-2 lg:pb-0">
