@@ -39,11 +39,11 @@ export const Card: React.FC<CardProps> = ({ card, isSelected, onToggleSelect }) 
     <div
       onClick={() => onToggleSelect(card.id)}
       className={`
-        w-36 h-52 rounded-lg flex flex-col p-3 text-background-dark 
+        w-24 h-36 sm:w-36 sm:h-52 rounded-lg flex flex-col p-2 sm:p-3 text-background-dark 
         cursor-pointer shadow-2xl transition-all duration-300 ease-out select-none relative
         ${card.enhancement === Enhancement.Stone ? 'bg-zinc-600 text-white' : 'bg-card-white'}
         ${getEditionClass(card.edition)}
-        ${isSelected ? 'transform -translate-y-10 border-2 border-primary' : 'hover:-translate-y-4'}
+        ${isSelected ? 'transform -translate-y-6 sm:-translate-y-10 border-2 border-primary' : 'hover:-translate-y-4'}
       `}
     >
       <div className="flex justify-between items-start">

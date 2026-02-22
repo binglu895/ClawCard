@@ -726,7 +726,7 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="flex h-screen w-screen bg-background-dark font-display overflow-hidden relative">
+    <div className="flex flex-col md:flex-row min-h-screen md:h-screen w-full bg-background-dark font-display overflow-x-hidden overflow-y-auto md:overflow-hidden relative">
       <div className="noise-overlay" />
 
       {/* Render Main Menu */}
@@ -745,7 +745,7 @@ const App: React.FC = () => {
 
           <main className="flex-1 flex flex-col relative">
             {/* Top Header - Add Save/Load Buttons Here */}
-            <div className="absolute top-6 right-12 z-50 flex gap-4">
+            <div className="absolute top-2 sm:top-6 right-2 sm:right-12 z-50 flex gap-2 sm:gap-4">
               <button
                 onClick={handleLoadGame}
                 disabled={!hasSave}
@@ -796,7 +796,7 @@ const App: React.FC = () => {
             )}
 
             {/* Top Header */}
-            <div className="p-12 pb-0 flex items-center gap-8">
+            <div className="p-4 sm:p-12 pb-0 flex flex-col lg:flex-row items-start lg:items-center gap-4 lg:gap-8">
               <div className="flex flex-col">
                 <span className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest italic">Progress (修为年限)</span>
                 <span className="text-xl font-medium tracking-tight text-white">Years: {state.year} / 99</span>
@@ -812,7 +812,7 @@ const App: React.FC = () => {
                 <span className="text-xl font-medium tracking-tight text-white">Lv. {currentHandPreview?.level || 1}</span>
               </div>
 
-              <div className="ml-auto flex gap-3">
+              <div className="lg:ml-auto flex gap-2 sm:gap-3 overflow-x-auto w-full lg:w-auto pb-2 lg:pb-0">
                 {(['Head', 'Hand', 'Leg', 'Body', 'Accessory'] as const).map((slot) => {
                   const artifact = state.equipment[slot];
                   return (
@@ -860,7 +860,7 @@ const App: React.FC = () => {
               </div>
 
               {state.consumables.length > 0 && (
-                <div className="flex gap-2 ml-4 p-2 bg-zinc-900/50 rounded-2xl border border-white/5">
+                <div className="flex gap-2 lg:ml-4 p-2 bg-zinc-900/50 rounded-2xl border border-white/5 overflow-x-auto w-full lg:w-auto">
                   {state.consumables.map((c, i) => (
                     <div
                       key={i}
@@ -882,7 +882,7 @@ const App: React.FC = () => {
             </div>
 
             {/* Center Game Field */}
-            <div className="flex-1 flex flex-col items-center justify-center p-12 relative">
+            <div className="flex-1 flex flex-col items-center justify-center p-4 sm:p-12 relative min-h-[400px]">
 
               {isRoundOver && (
                 <div className="absolute inset-0 z-50 flex items-center justify-center bg-background-dark/80 backdrop-blur-xl animate-in fade-in duration-500">
@@ -927,7 +927,7 @@ const App: React.FC = () => {
                 </div>
               )}
 
-              <div className="flex gap-4 items-end h-[300px]">
+              <div className="flex gap-2 sm:gap-4 items-end h-[240px] sm:h-[300px] overflow-x-auto w-full justify-center px-4 scrollbar-hide py-4">
                 {state.cards.map(card => (
                   <Card
                     key={card.id}
@@ -940,7 +940,7 @@ const App: React.FC = () => {
             </div>
 
             {/* Bottom Bar Controls */}
-            <footer className="h-24 border-t border-zinc-800/50 bg-[#0d0d0d] flex items-center px-12 z-20 shrink-0">
+            <footer className="h-auto py-4 md:h-24 border-t border-zinc-800/50 bg-[#0d0d0d] flex flex-col md:flex-row items-center px-4 sm:px-12 gap-4 z-20 shrink-0">
               <div className="flex gap-4">
                 <button
                   onClick={handlePlayHand}
@@ -965,7 +965,7 @@ const App: React.FC = () => {
                 </button>
               </div>
 
-              <div className="ml-auto flex items-center gap-6 bg-zinc-900/40 px-5 py-2.5 rounded-xl border border-zinc-800/50">
+              <div className="md:ml-auto flex items-center gap-4 sm:gap-6 bg-zinc-900/40 px-3 sm:px-5 py-2 sm:py-2.5 rounded-xl border border-zinc-800/50 w-full md:w-auto justify-between md:justify-end">
                 <div className="flex flex-col items-end">
                   <span className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest">Deck (剩余牌组)</span>
                   <span className="text-lg font-bold text-zinc-400">{state.deck.length}</span>

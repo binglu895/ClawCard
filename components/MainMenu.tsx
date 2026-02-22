@@ -8,7 +8,7 @@ interface MainMenuProps {
 
 export const MainMenu: React.FC<MainMenuProps> = ({ hasSave, onNewGame, onContinue }) => {
     return (
-        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black overflow-hidden font-display">
+        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black overflow-y-auto font-display p-4">
             {/* Ethereal Smoky Background Effects */}
             <div className="absolute inset-0 opacity-40">
                 <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-zinc-600 rounded-full mix-blend-screen filter blur-[100px] animate-pulse" />
@@ -16,10 +16,10 @@ export const MainMenu: React.FC<MainMenuProps> = ({ hasSave, onNewGame, onContin
                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[40rem] h-[40rem] bg-primary/10 rounded-full mix-blend-screen filter blur-[150px] animate-pulse delay-150" />
             </div>
 
-            <div className="relative z-10 flex flex-col items-center animate-in fade-in zoom-in duration-1000">
-                <h1 className="text-sm font-black text-zinc-500 tracking-[1em] uppercase mb-4 opacity-80">Path of Immortality</h1>
-                <h2 className="text-7xl font-black text-transparent bg-clip-text bg-gradient-to-b from-white to-zinc-600 tracking-widest mb-16 drop-shadow-2xl">
-                    飞升 <span className="text-4xl">ASCENSION</span>
+            <div className="relative z-10 flex flex-col items-center animate-in fade-in zoom-in duration-1000 w-full">
+                <h1 className="text-xs sm:text-sm font-black text-zinc-500 tracking-[0.5em] sm:tracking-[1em] uppercase mb-4 opacity-80 text-center">Path of Immortality</h1>
+                <h2 className="text-4xl sm:text-7xl font-black text-transparent bg-clip-text bg-gradient-to-b from-white to-zinc-600 tracking-widest mb-8 sm:mb-16 drop-shadow-2xl text-center">
+                    飞升 <span className="text-2xl sm:text-4xl">ASCENSION</span>
                 </h2>
 
                 <div className="flex flex-col gap-6 w-64">
