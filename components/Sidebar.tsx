@@ -13,18 +13,18 @@ export const Sidebar: React.FC<SidebarProps> = ({ state, onPlayHand, onDiscard, 
   const progressPercent = state.goal > 0 ? Math.min((state.tao / state.goal) * 100, 100) : 0;
 
   return (
-    <aside className="w-full md:w-80 frosted-panel h-auto md:h-full flex flex-col p-4 sm:p-8 z-10 shrink-0 border-b md:border-b-0 md:border-r border-white/5 bg-[#0a0a0a]/80">
-      <div className="mb-12">
-        <div className="flex items-center gap-2 mb-1">
+    <aside className="w-full md:w-80 [@media(max-height:500px)]:w-full frosted-panel h-auto md:h-full flex flex-row md:flex-col p-2 sm:p-4 sm:p-8 z-10 shrink-0 border-b md:border-b-0 md:border-r border-white/5 bg-[#0a0a0a]/80 overflow-x-auto md:overflow-y-auto scrollbar-hide">
+      <div className="mb-4 md:mb-12 [@media(max-height:500px)]:mb-0 flex-shrink-0">
+        <div className="flex items-center gap-2 mb-1 [@media(max-height:500px)]:hidden">
           <span className="material-symbols-outlined text-primary text-sm">temple_buddhist</span>
           <p className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold">Foundation (修行进度)</p>
         </div>
-        <h2 className="text-2xl font-bold tracking-tight uppercase text-white mb-6">{state.currentBlind}</h2>
+        <h2 className="text-xl md:text-2xl font-bold tracking-tight uppercase text-white mb-2 md:mb-6">{state.currentBlind}</h2>
 
         <div className="space-y-1">
           <div className="flex justify-between items-end">
-            <span className="text-[10px] text-zinc-500 uppercase font-extrabold tracking-tighter">Tao (道行)</span>
-            <span className="text-3xl font-black text-white tabular-nums drop-shadow-[0_0_8px_rgba(255,255,255,0.3)]">
+            <span className="text-[10px] text-zinc-500 uppercase font-extrabold tracking-tighter [@media(max-height:500px)]:hidden">Tao (道行)</span>
+            <span className="text-xl md:text-3xl font-black text-white tabular-nums drop-shadow-[0_0_8px_rgba(255,255,255,0.3)]">
               {state.tao.toLocaleString()}
             </span>
           </div>
@@ -34,7 +34,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ state, onPlayHand, onDiscard, 
               style={{ width: `${progressPercent}%` }}
             />
           </div>
-          <div className="flex justify-between items-start mt-1">
+          <div className="flex justify-between items-start mt-1 [@media(max-height:500px)]:hidden">
             <span className="text-[10px] text-zinc-500 uppercase font-extrabold tracking-tighter">Tribulation (劫难)</span>
             <span className="text-lg font-bold text-zinc-400 tabular-nums">
               {state.goal.toLocaleString()}
@@ -44,7 +44,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ state, onPlayHand, onDiscard, 
       </div>
 
       {/* Lives Display */}
-      <div className="mb-8 p-3 bg-red-500/5 rounded-lg border border-red-500/10">
+      <div className="mb-4 md:mb-8 p-2 md:p-3 bg-red-500/5 rounded-lg border border-red-500/10 [@media(max-height:500px)]:hidden">
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-2">
             <span className="material-symbols-outlined text-red-500 text-sm">favorite</span>
@@ -61,21 +61,21 @@ export const Sidebar: React.FC<SidebarProps> = ({ state, onPlayHand, onDiscard, 
         </div>
       </div>
 
-      <div className="flex-1 flex flex-col justify-center items-center gap-2">
+      <div className="flex-1 flex flex-row md:flex-col justify-center items-center gap-4 md:gap-2 px-4 md:px-0">
         <div className="text-center group">
-          <p className="text-[10px] uppercase tracking-[0.3em] text-zinc-500 font-bold mb-1 italic">Base Tao (基础道行)</p>
-          <h3 className="text-6xl font-black text-primary neon-blue-glow tabular-nums transition-all group-hover:scale-110 duration-300">
+          <p className="text-[8px] md:text-[10px] uppercase tracking-[0.1em] md:tracking-[0.3em] text-zinc-500 font-bold mb-0.5 md:mb-1 italic">Base Tao</p>
+          <h3 className="text-3xl md:text-6xl font-black text-primary neon-blue-glow tabular-nums">
             {state.chips.toLocaleString()}
           </h3>
         </div>
 
-        <div className="my-4">
-          <span className="material-symbols-outlined text-4xl text-zinc-800 font-light select-none">close</span>
+        <div className="md:my-4 [@media(max-height:500px)]:hidden">
+          <span className="material-symbols-outlined text-xl md:text-4xl text-zinc-800 font-light select-none">close</span>
         </div>
 
         <div className="text-center group">
-          <p className="text-[10px] uppercase tracking-[0.3em] text-zinc-500 font-bold mb-1 italic">Base Mult (基础倍率)</p>
-          <h3 className="text-6xl font-black text-mult-red neon-red-glow tabular-nums transition-all group-hover:scale-110 duration-300">
+          <p className="text-[8px] md:text-[10px] uppercase tracking-[0.1em] md:tracking-[0.3em] text-zinc-500 font-bold mb-0.5 md:mb-1 italic">Base Mult</p>
+          <h3 className="text-3xl md:text-6xl font-black text-mult-red neon-red-glow tabular-nums">
             {state.mult}
           </h3>
         </div>
@@ -98,7 +98,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ state, onPlayHand, onDiscard, 
           <span className="text-3xl font-black tabular-nums text-mult-red/80">{state.discardsLeft}</span>
         </div>
 
-        <div className="flex justify-between items-center pt-2">
+        <div className="flex justify-between items-center pt-2 [@media(max-height:500px)]:hidden">
           <div className="flex items-center gap-2">
             <div className="p-1.5 bg-yellow-500/10 rounded-lg">
               <span className="material-symbols-outlined text-yellow-500 text-sm">diamond</span>

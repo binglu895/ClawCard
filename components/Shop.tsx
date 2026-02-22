@@ -21,11 +21,11 @@ export const Shop: React.FC<ShopProps> = ({ state, shopItems, onBuyJoker, onBuyC
     ];
 
     return (
-        <div className="absolute inset-0 z-40 flex flex-col items-center justify-start sm:justify-center bg-background-dark/95 backdrop-blur-3xl animate-in fade-in zoom-in duration-500 p-4 sm:p-8 overflow-y-auto">
+        <div className="absolute inset-0 z-40 flex flex-col items-center justify-start sm:justify-center bg-background-dark/95 backdrop-blur-3xl animate-in fade-in zoom-in duration-500 p-2 sm:p-4 sm:p-8 overflow-y-auto scrollbar-hide">
             <div className="w-full max-w-7xl h-full flex flex-col">
                 {/* Header Area */}
                 <div className="flex flex-col lg:flex-row justify-between items-center mb-6 shrink-0 gap-4 w-full">
-                    <div className="text-center lg:text-left">
+                    <div className="text-center lg:text-left [@media(max-height:500px)]:hidden">
                         <span className="text-primary text-[10px] font-black uppercase tracking-[0.4em] mb-1 block">Hermitage Market</span>
                         <h1 className="text-2xl sm:text-4xl font-black text-white uppercase tracking-tighter flex items-center justify-center lg:justify-start gap-4">
                             Market (坊市)
@@ -33,35 +33,35 @@ export const Shop: React.FC<ShopProps> = ({ state, shopItems, onBuyJoker, onBuyC
                         </h1>
                     </div>
 
-                    <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6">
+                    <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-6 w-full lg:w-auto">
                         {/* Reroll Button */}
                         <button
                             onClick={onReroll}
                             disabled={state.spiritStones < rerollCost}
                             className={`
-                                flex items-center gap-3 px-4 sm:px-6 py-2 sm:py-3 rounded-xl border-2 transition-all active:scale-95
+                                flex items-center gap-2 px-3 sm:px-6 py-1.5 sm:py-3 rounded-xl border-2 transition-all active:scale-95
                                 ${state.spiritStones >= rerollCost
                                     ? 'border-primary/50 bg-primary/5 text-primary hover:bg-primary hover:text-white shadow-[0_0_20px_rgba(37,140,244,0.1)]'
                                     : 'border-zinc-800 bg-zinc-900/50 text-zinc-600 cursor-not-allowed opacity-50'}
                             `}
                         >
-                            <span className="material-symbols-outlined text-sm">refresh</span>
+                            <span className="material-symbols-outlined text-xs sm:text-sm">refresh</span>
                             <div className="flex flex-col items-start leading-none">
-                                <span className="text-xs font-black uppercase tracking-wider">Refresh</span>
-                                <span className="text-[10px] font-bold opacity-80">${rerollCost}</span>
+                                <span className="text-[10px] sm:text-xs font-black uppercase tracking-wider">Refresh</span>
+                                <span className="text-[8px] sm:text-[10px] font-bold opacity-80">${rerollCost}</span>
                             </div>
                         </button>
 
                         <div className="hidden sm:block h-10 w-px bg-zinc-800" />
 
                         <div className="flex flex-col items-center sm:items-end sm:mr-4">
-                            <span className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest">Balance</span>
-                            <span className="text-2xl sm:text-4xl font-black text-yellow-500 tabular-nums">${state.spiritStones}</span>
+                            <span className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest [@media(max-height:500px)]:hidden">Balance</span>
+                            <span className="text-xl sm:text-4xl font-black text-yellow-500 tabular-nums">${state.spiritStones}</span>
                         </div>
 
                         <button
                             onClick={onSkip}
-                            className="px-6 sm:px-10 py-3 sm:py-4 bg-white text-black font-black text-base sm:text-lg rounded-xl hover:bg-zinc-200 transition-all active:scale-95 shadow-xl"
+                            className="px-4 sm:px-10 py-2 sm:py-4 bg-white text-black font-black text-sm sm:text-lg rounded-xl hover:bg-zinc-200 transition-all active:scale-95 shadow-xl"
                         >
                             NEXT (出发)
                         </button>

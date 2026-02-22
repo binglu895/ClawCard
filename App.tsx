@@ -796,7 +796,7 @@ const App: React.FC = () => {
             )}
 
             {/* Top Header */}
-            <div className="p-4 sm:p-12 pb-0 flex flex-col lg:flex-row items-start lg:items-center gap-4 lg:gap-8">
+            <div className="p-2 sm:p-4 lg:p-12 pb-0 flex flex-col lg:flex-row items-center lg:items-center gap-2 sm:gap-4 lg:gap-8 shrink-0">
               <div className="flex flex-col">
                 <span className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest italic">Progress (修为年限)</span>
                 <span className="text-xl font-medium tracking-tight text-white">Years: {state.year} / 99</span>
@@ -882,7 +882,7 @@ const App: React.FC = () => {
             </div>
 
             {/* Center Game Field */}
-            <div className="flex-1 flex flex-col items-center justify-center p-4 sm:p-12 relative min-h-[400px]">
+            <div className="flex-1 flex flex-col items-center justify-center p-2 sm:p-12 relative min-h-0 overflow-hidden">
 
               {isRoundOver && (
                 <div className="absolute inset-0 z-50 flex items-center justify-center bg-background-dark/80 backdrop-blur-xl animate-in fade-in duration-500">
@@ -911,7 +911,7 @@ const App: React.FC = () => {
               )}
 
               {currentHandPreview && (
-                <div className="mb-8 flex gap-4 animate-in fade-in slide-in-from-bottom-4 duration-300">
+                <div className="mb-2 sm:mb-8 flex gap-2 sm:gap-4 animate-in fade-in slide-in-from-bottom-4 duration-300 scale-75 sm:scale-100 origin-bottom">
                   <div className="px-6 py-4 bg-primary/10 border border-primary/30 rounded-xl flex flex-col items-center shadow-2xl backdrop-blur-md">
                     <span className="text-[10px] font-bold text-primary uppercase tracking-widest mb-1">Chips (筹码)</span>
                     <span className="text-2xl font-bold text-white tabular-nums">{currentHandPreview.chips}</span>
@@ -927,7 +927,7 @@ const App: React.FC = () => {
                 </div>
               )}
 
-              <div className="flex gap-2 sm:gap-4 items-end h-[240px] sm:h-[300px] overflow-x-auto w-full justify-center px-4 scrollbar-hide py-4">
+              <div className="flex gap-2 sm:gap-4 items-end h-[180px] sm:h-[300px] overflow-x-auto w-full justify-center px-4 scrollbar-hide py-2 sm:py-4">
                 {state.cards.map(card => (
                   <Card
                     key={card.id}
@@ -940,7 +940,7 @@ const App: React.FC = () => {
             </div>
 
             {/* Bottom Bar Controls */}
-            <footer className="h-auto py-4 md:h-24 border-t border-zinc-800/50 bg-[#0d0d0d] flex flex-col md:flex-row items-center px-4 sm:px-12 gap-4 z-20 shrink-0">
+            <footer className="h-auto py-2 md:h-24 border-t border-zinc-800/50 bg-[#0d0d0d] flex flex-col md:flex-row items-center px-4 sm:px-12 gap-2 sm:gap-4 z-20 shrink-0">
               <div className="flex gap-4">
                 <button
                   onClick={handlePlayHand}
